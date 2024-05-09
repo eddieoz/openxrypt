@@ -85,13 +85,13 @@ function loadKeys() {
                 <td>${fingerprint || 'Invalid Key'}</td>
                 <td>
                     <button class="show-btn-pubkey" data-handle="${twitterHandle}">Show Key</button>
-                    <button class="delete-btn" data-handle="${twitterHandle}">Delete</button>
+                    <button class="delete-pub-btn" data-handle="${twitterHandle}">Delete</button>
                 </td>
             `;
             keysTableBody.appendChild(row);
         }
 
-        document.querySelectorAll('.delete-btn').forEach((btn) => {
+        document.querySelectorAll('.delete-pub-btn').forEach((btn) => {
             btn.addEventListener('click', (event) => {
                 const twitterHandle = event.target.getAttribute('data-handle');
                 chrome.storage.local.get({ keys: {} }, (result) => {
