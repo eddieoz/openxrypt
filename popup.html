@@ -7,18 +7,25 @@
       min-width: 200px;
       font-family: Arial, sans-serif;
     }
-    button {
+    button, input {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
       font-size: 16px;
+    }
+    input[type=password] {
+      margin: 10px 0;
     }
   </style>
 </head>
 <body>
   <h2>Xrypt</h2>
   <button id="encrypt">Encrypt</button>
-  <button id="addKey">Add Key</button>
+  <button id="addKey">Manage Keys</button>
+  <div id="passphraseSection">
+    <!-- This section will dynamically show the passphrase input or the reset button -->
+  </div>
 </body>
+<script src="openpgp.min.js"></script>
 <script src="popup.js"></script>
 </html>
