@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Xrypt Key Management</title>
+  <style>
+    body {
+      min-width: 300px;
+      font-family: Arial, sans-serif;
+    }
+    h2 {
+      margin-top: 0;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    button.delete-btn {
+      background-color: red;
+      color: white;
+    }
+    button.show-btn {
+      background-color: green;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h2>Xrypt Key Management</h2>
+  <label for="twitterHandle">Twitter Handle</label>
+  <input type="text" id="twitterHandle" placeholder="@handle">
+  <label for="publicKey">Public Key</label>
+  <textarea id="publicKey" placeholder="Paste your public key here" rows="5"></textarea>
+  <button id="addKey">Add Key</button>
+
+  <h3>Registered Keys</h3>
+  <table id="keysTable">
+    <thead>
+      <tr>
+        <th>Twitter Handle</th>
+        <th>Key Fingerprint</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</body>
+<script src="openpgp.min.js"></script>
+<script src="keys.js"></script>
+</html>
