@@ -17,7 +17,6 @@
 //   }
 // }
 
-
 // // Listen for messages from the popup
 // chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 //   if (request.action === 'encryptText') {
@@ -98,13 +97,12 @@ async function getSessionPassphrase() {
   return sessionPassphrase;
 }
 
-
 // Retrieve private key of the extension user from storage
 async function retrieveExtensionUserPrivateKey() {
   const extensionUserHandle = findUsernameFromInitialState();
   return new Promise((resolve, reject) => {
     chrome.storage.local.get({ private_keys: {} }, (result) => {
-      const keys = result.private_keys;      
+      const keys = result.private_keys;
       if (keys[extensionUserHandle]) {
         resolve(keys[extensionUserHandle]);
       } else {
@@ -119,11 +117,14 @@ async function decryptPGPMessage(message) {
   try {
     const privateKeyArmored = await retrieveExtensionUserPrivateKey();
     const passphrase = await getSessionPassphrase();
-    if (!passphrase || passphrase === "[Decryption Failed - No Passphrase]") return passphrase;
+    if (!passphrase || passphrase === "[Decryption Failed - No Passphrase]")
+      return passphrase;
 
     const privateKey = await openpgp.decryptKey({
-      privateKey: await openpgp.readPrivateKey({ armoredKey: privateKeyArmored }),
-      passphrase: passphrase
+      privateKey: await openpgp.readPrivateKey({
+        armoredKey: privateKeyArmored,
+      }),
+      passphrase: passphrase,
     });
 
     const decryptedMessage = await openpgp.decrypt({
@@ -140,11 +141,15 @@ async function decryptPGPMessage(message) {
 
 // Automatically scan and decrypt all PGP encrypted texts on the page
 async function autoDecryptAllXryptTexts() {
-  const pgpBlockRegex = /-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----/gs;
+  const pgpBlockRegex =
+    /-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----/gs;
 
-  const elements = document.querySelectorAll('body, body *');
+  const elements = document.querySelectorAll("body, body *");
   for (const el of elements) {
-    if (el.childNodes.length === 1 && el.childNodes[0].nodeType === Node.TEXT_NODE) {
+    if (
+      el.childNodes.length === 1 &&
+      el.childNodes[0].nodeType === Node.TEXT_NODE
+    ) {
       const textContent = el.textContent;
       const matches = textContent.match(pgpBlockRegex);
 
@@ -195,7 +200,7 @@ async function getPublicKeyFromPrivate(privateKey) {
     const key = await openpgp.readKey({ armoredKey: privateKey });
     return key.toPublic().armor();
   } catch (error) {
-    console.error('Error retrieving public key:', error);
+    console.error("Error retrieving public key:", error);
     return null;
   }
 }
@@ -204,9 +209,12 @@ async function getPublicKeyFromPrivate(privateKey) {
 async function getGPGFingerprint(publicKey) {
   try {
     const key = await openpgp.readKey({ armoredKey: publicKey });
-    return key.getFingerprint().match(/.{1,4}/g).join(' ');
+    return key
+      .getFingerprint()
+      .match(/.{1,4}/g)
+      .join(" ");
   } catch (error) {
-    console.error('Error generating GPG fingerprint:', error);
+    console.error("Error generating GPG fingerprint:", error);
     return null;
   }
 }
@@ -221,7 +229,7 @@ async function encryptTextPGP(text, recipientPublicKeys) {
 
     const encrypted = await openpgp.encrypt({
       message,
-      encryptionKeys: recipientKeys
+      encryptionKeys: recipientKeys,
     });
 
     return `${encrypted}`;
@@ -240,13 +248,21 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
   if (selectedText.length > 0) {
     try {
       const recipientPublicKey = await retrieveUserPublicKey(twitterHandle);
-      const extensionUserPublicKey = await retrieveUserPublicKeyFromPrivate(extensionUserHandle);
+      const extensionUserPublicKey = await retrieveUserPublicKeyFromPrivate(
+        extensionUserHandle
+      );
 
-      const encryptedText = await encryptTextPGP(selectedText, [recipientPublicKey, extensionUserPublicKey]);
+      const encryptedText = await encryptTextPGP(selectedText, [
+        recipientPublicKey,
+        extensionUserPublicKey,
+      ]);
 
       replaceSelectedText(encryptedText);
 
-      sendResponse({ status: "success", message: "Text encrypted and copied to clipboard!" });
+      sendResponse({
+        status: "success",
+        message: "Text encrypted and copied to clipboard!",
+      });
     } catch (err) {
       console.error(err);
       sendResponse({ status: "error", message: "Failed to encrypt text." });
@@ -260,12 +276,15 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
 // Find the Twitter handle of the recipient from the DM conversation
 function findTwitterHandle() {
   // Select the section containing conversation details
-  const section = document.querySelector('section[aria-label="Section details"]');
+  const section = document.querySelector(
+    'section[aria-label="Section details"]'
+  );
   if (section) {
     // Look for the correct link containing the Twitter handle
     const link = section.querySelector('a[href*="/"]');
-    const handleElement = Array.from(section.querySelectorAll('span'))
-      .find((el) => el.textContent.startsWith('@'));
+    const handleElement = Array.from(section.querySelectorAll("span")).find(
+      (el) => el.textContent.startsWith("@")
+    );
 
     if (handleElement) {
       return handleElement.textContent.trim();
@@ -279,15 +298,22 @@ function findTwitterHandle() {
 
 // Find the username from the `window.__INITIAL_STATE__` JSON object
 function findUsernameFromInitialState() {
-  const scriptTags = document.querySelectorAll('script[type="text/javascript"]');
+  const scriptTags = document.querySelectorAll(
+    'script[type="text/javascript"]'
+  );
   for (const scriptTag of scriptTags) {
-    if (scriptTag.textContent.includes('window.__INITIAL_STATE__')) {
+    if (scriptTag.textContent.includes("window.__INITIAL_STATE__")) {
       const regex = /window\.__INITIAL_STATE__\s*=\s*(\{.*?\});/s;
       const match = regex.exec(scriptTag.textContent);
       if (match) {
         try {
           const jsonData = JSON.parse(match[1]);
-          if (jsonData && jsonData.entities && jsonData.entities.users && jsonData.entities.users.entities) {
+          if (
+            jsonData &&
+            jsonData.entities &&
+            jsonData.entities.users &&
+            jsonData.entities.users.entities
+          ) {
             const users = jsonData.entities.users.entities;
             for (const userId in users) {
               if (users.hasOwnProperty(userId) && users[userId].screen_name) {
@@ -296,7 +322,7 @@ function findUsernameFromInitialState() {
             }
           }
         } catch (error) {
-          console.error('Error parsing __INITIAL_STATE__ JSON:', error);
+          console.error("Error parsing __INITIAL_STATE__ JSON:", error);
         }
       }
     }
@@ -318,21 +344,22 @@ function replaceSelectedText(replacementText) {
     newRange.selectNodeContents(textNode);
     selection.addRange(newRange);
 
-    const event = new Event('input', { bubbles: true });
-    const editableElement = range.startContainer.parentNode.closest('[contenteditable="true"], textarea, input');
+    const event = new Event("input", { bubbles: true });
+    const editableElement = range.startContainer.parentNode.closest(
+      '[contenteditable="true"], textarea, input'
+    );
     if (editableElement) editableElement.dispatchEvent(event);
   }
 }
 
-
 async function getSessionPassphrase() {
-  const sessionPassphrase = sessionStorage.getItem('sessionPassphrase');
+  const sessionPassphrase = sessionStorage.getItem("sessionPassphrase");
   return sessionPassphrase || "[Decryption Failed - No Passphrase]";
 }
 
 // Set the passphrase in session storage
 async function setSessionPassphrase(passphrase) {
-  sessionStorage.setItem('sessionPassphrase', passphrase);
+  sessionStorage.setItem("sessionPassphrase", passphrase);
 }
 
 // Listen for messages from the popup or background script
@@ -340,13 +367,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "encryptText") {
     encryptAndReplaceSelectedTextPGP(sendResponse);
   } else if (request.action === "resetPassphrase") {
-    sessionStorage.removeItem('sessionPassphrase'); // Reset passphrase
+    sessionStorage.removeItem("sessionPassphrase"); // Reset passphrase
     sendResponse({ status: "success", message: "Passphrase reset" });
   } else if (request.action === "setPassphrase") {
     setSessionPassphrase(request.passphrase);
     sendResponse({ status: "success", message: "Passphrase set" });
   } else if (request.action === "checkPassphrase") {
-    const hasPassphrase = !!sessionStorage.getItem('sessionPassphrase');
+    const hasPassphrase = !!sessionStorage.getItem("sessionPassphrase");
     sendResponse({ hasPassphrase });
   } else {
     sendResponse({ status: "unknown action" });
@@ -361,7 +388,7 @@ function initAutoDecryptionObserver() {
   const observer = new MutationObserver(autoDecryptAllXryptTexts);
   observer.observe(document.body, {
     childList: true,
-    subtree: true
+    subtree: true,
   });
 }
 
