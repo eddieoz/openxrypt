@@ -57,6 +57,21 @@
     </thead>
     <tbody></tbody>
   </table>
+
+  <h2>Manage Your Private Key</h2>
+  <div id="privateKeyInputSection">
+    <label for="ownerHandle">Your Twitter Handle</label>
+    <input type="text" id="ownerHandle" placeholder="@yourhandle">
+    <label for="privateKey">Your Private Key</label>
+    <textarea id="privateKey" placeholder="Paste your private key here" rows="5"></textarea>
+    <button id="addPrivateKey">Add Private Key</button>
+  </div>
+  <div id="privateKeyInfoSection" style="display: none;">
+    <p><strong>Your Twitter Handle:</strong> <span id="displayOwnerHandle"></span></p>
+    <p><strong>Fingerprint:</strong> <span id="displayFingerprint"></span></p>
+    <button id="showPublicKey" class="show-btn">Show Public Key</button>
+    <button id="deletePrivateKey" class="delete-btn">Delete Private Key</button>
+  </div>
 </body>
 <script src="openpgp.min.js"></script>
 <script src="keys.js"></script>
