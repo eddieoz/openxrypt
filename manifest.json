@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Xrypt",
   "version": "1.4",
-  "description": "Encrypt and decrypt text on the page using a username as the key.",
+  "description": "Real E2EE X Communication",
   "permissions": ["activeTab", "storage", "tabs"],
   "action": {
     "default_popup": "popup.html",
@@ -11,18 +11,18 @@
   "content_scripts": [
     {
       "matches": ["*://*.twitter.com/*"],
-      "js": ["openpgp.min.js", "content.js"],
+      "js": ["lib/openpgp.min.js", "content.js"],
       "run_at": "document_idle"
     }
   ],
   "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
+    "16": "imgs/icon16.png",
+    "48": "imgs/icon48.png",
+    "128": "imgs/icon128.png"
   },
   "web_accessible_resources": [
     {
-      "resources": ["keys.html", "openpgp.min.js", "keys.js", "show_key.html", "show_key.js"],
+      "resources": ["keys.html", "lib/openpgp.min.js", "keys.js", "show_key.html", "show_key.js"],
       "matches": ["<all_urls>"]
     }
   ]
