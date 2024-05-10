@@ -10,6 +10,13 @@ OpenXrypt is a Chrome extension designed to provide secure and encrypted communi
 - **Multiple Key Encryption:** Encrypt messages for multiple recipients simultaneously.
 - **Direct Message (DM) Compatibility:** Seamless integration with X (formerly Twitter) direct messaging.
 
+### Screenshots
+
+![](imgs/opnxrpt-popup.png)
+![](imgs/opnxrpt-mng-pubkeys.png)
+![](imgs/opnxrpt-show-pubkeys.png)
+![](imgs/opnxrpt-mng-privkeys.png)
+
 ### How It Works
 
 1. **Install Extension:** Add OpenXrypt to your Chrome browser.
