@@ -118,5 +118,5 @@ document.getElementById("encrypt").addEventListener("click", () => {
 });
 
 document.getElementById("addKey").addEventListener("click", () => {
-  chrome.tabs.create({ url: chrome.runtime.getURL("keys.html") });
+  chrome.tabs.create({ url: chrome.runtime.getURL("/src/keys.html") });
 });

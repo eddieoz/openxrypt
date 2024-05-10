@@ -170,7 +170,7 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
 
       sendResponse({
         status: "success",
-        message: "Text encrypted and copied to clipboard!",
+        message: "Text encrypted and ready to send!",
       });
     } catch (err) {
       console.error(err);

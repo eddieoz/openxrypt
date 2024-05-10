@@ -5,13 +5,13 @@
   "description": "Upgrade Your Social Media Privacy",
   "permissions": ["activeTab", "storage", "tabs"],
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/popup.html",
     "default_icon": "imgs/icon128.png"
   },
   "content_scripts": [
     {
       "matches": ["*://*.twitter.com/*"],
-      "js": ["lib/openpgp.min.js", "content.js"],
+      "js": ["lib/openpgp.min.js", "src/content.js"],
       "run_at": "document_idle"
     }
   ],
@@ -22,7 +22,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["keys.html", "lib/openpgp.min.js", "keys.js", "show_key.html", "show_key.js"],
+      "resources": ["src/keys.html", "lib/openpgp.min.js", "src/keys.js", "src/show_key.html", "src/show_key.js"],
       "matches": ["<all_urls>"]
     }
   ]

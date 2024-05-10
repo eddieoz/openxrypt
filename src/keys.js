@@ -111,7 +111,7 @@ function loadKeys() {
         chrome.storage.local.get({ keys: {} }, (result) => {
           const keys = result.keys;
           const publicKey = encodeURIComponent(keys[twitterHandle]);
-          const url = chrome.runtime.getURL(`show_key.html?key=${publicKey}`);
+          const url = chrome.runtime.getURL(`/src/show_key.html?key=${publicKey}`);
           chrome.tabs.create({ url });
         });
       });
@@ -163,7 +163,7 @@ function loadPrivateKeys() {
           const publicKey = encodeURIComponent(
             await getPublicKeyFromPrivate(privateKey)
           );
-          const url = chrome.runtime.getURL(`show_key.html?key=${publicKey}`);
+          const url = chrome.runtime.getURL(`/src/show_key.html?key=${publicKey}`);
           chrome.tabs.create({ url });
         });
       });
