@@ -182,14 +182,19 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
   }
 }
 
-// Improved version of findTwitterHandle
+// Unified version of findTwitterHandle
 function findTwitterHandle() {
-  // Select the relevant section containing conversation details
-  const section = document.querySelector('section[aria-label="Section details"]');
+  // Select the section or conversation header containing the user details
+  const section = document.querySelector('section[aria-label="Section details"]') ||
+                  document.querySelector('[data-testid="conversation-header"]') ||
+                  document.querySelector('[aria-labelledby*="conversation-title"]');
   
   if (section) {
-    // Try to find the handle directly from a recognizable class or attribute
-    const handleElement = section.querySelector('div[role="heading"] span');
+    // Try to find the handle directly from recognizable classes, attributes, and roles
+    const handleElement = section.querySelector('div[role="heading"] span') ||
+                          section.querySelector('h2 span') ||
+                          section.querySelector('[data-testid="UserCell"] a span') ||
+                          section.querySelector('span.css-1qaijid'); // Class-based fallback
     
     if (handleElement && handleElement.textContent.startsWith('@')) {
       return handleElement.textContent.trim();
@@ -206,7 +211,6 @@ function findTwitterHandle() {
   // Return a default value if the handle is not found
   return "@unknown_dest_user";
 }
-
 
 // Find the username from the `window.__INITIAL_STATE__` JSON object
 function findUsernameFromInitialState() {
