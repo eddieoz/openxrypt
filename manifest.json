@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Xrypt",
+  "name": "OpenXrypt",
   "version": "1.4",
-  "description": "Real E2EE X Communication",
+  "description": "Upgrade Your Social Media Privacy",
   "permissions": ["activeTab", "storage", "tabs"],
   "action": {
     "default_popup": "popup.html",
