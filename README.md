@@ -14,8 +14,8 @@ OpenXrypt is a Chrome extension designed to provide secure and encrypted communi
 
 ![Popup](imgs/opnxrpt-popup.png)
 ![Manage pubkeys](imgs/opnxrpt-mng-pubkeys.png)
-![Show pubkey](imgs/opnxrpt-show-pubkeys.png)
 ![Manage privkeys](imgs/opnxrpt-mng-privkeys.png)
+![Show pubkey](imgs/opnxrpt-show-pubkeys.png)
 
 ### How It Works
 
