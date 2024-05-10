@@ -202,7 +202,7 @@ function findTwitterHandle() {
       if (handleMatch) return `@${handleMatch[1]}`;
     }
   }
-  return "@unknown_user";
+  return "@unknown_dest_user";
 }
 
 // Find the username from the `window.__INITIAL_STATE__` JSON object
