@@ -182,35 +182,27 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
   }
 }
 
-// Unified version of findTwitterHandle
+// Improved version using a link preceding the handle
 function findTwitterHandle() {
-  // Select the section or conversation header containing the user details
+  // Find the section containing the conversation or profile details
   const section = document.querySelector('section[aria-label="Section details"]') ||
                   document.querySelector('[data-testid="conversation-header"]') ||
                   document.querySelector('[aria-labelledby*="conversation-title"]');
-  
-  if (section) {
-    // Try to find the handle directly from recognizable classes, attributes, and roles
-    const handleElement = section.querySelector('div[role="heading"] span') ||
-                          section.querySelector('h2 span') ||
-                          section.querySelector('[data-testid="UserCell"] a span') ||
-                          section.querySelector('span.css-1qaijid'); // Class-based fallback
-    
-    if (handleElement && handleElement.textContent.startsWith('@')) {
-      return handleElement.textContent.trim();
-    }
 
-    // Fall back to searching for the link containing the handle
+  if (section) {
+    // Try to find the handle from a preceding link
     const link = section.querySelector('a[href*="/"]');
     if (link) {
-      const handleMatch = link.href.match(/\/([^\/]+)$/);
+      const handleMatch = link.href.match(/\/([^\/?]+)(?:\?|$)/);
       if (handleMatch) return `@${handleMatch[1]}`;
     }
   }
 
-  // Return a default value if the handle is not found
+  // Default value if the handle is not found
   return "@unknown_dest_user";
 }
+
+
 
 // Find the username from the `window.__INITIAL_STATE__` JSON object
 function findUsernameFromInitialState() {
