@@ -186,6 +186,7 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
 function findTwitterHandle() {
   // Find the section containing the conversation or profile details
   const section = document.querySelector('section[aria-label="Section details"]') ||
+                  document.querySelector('[aria-labelledby="detail-header"]') ||
                   document.querySelector('[data-testid="conversation-header"]') ||
                   document.querySelector('[aria-labelledby*="conversation-title"]');
 
