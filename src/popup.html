@@ -3,13 +3,22 @@
   <head>
     <title>OpenXrypt</title>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+      @font-face {
+        font-family: "Montserrat";
+        src: url("/fonts/Montserrat-Regular.ttf") format("truetype");
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: "Montserrat";
+        src: url("/fonts/Montserrat-Bold.ttf") format("truetype");
+        font-weight: 600;
+      }
 
       body {
         margin: 0 auto;
         max-width: 600px;
         width: 300px;
-        font-family: 'Montserrat', sans-serif;
+        font-family: "Montserrat", sans-serif;
       }
       h2 {
         display: flex;
@@ -53,7 +62,7 @@
     </style>
   </head>
   <body>
-    <h2><img src="/imgs/icon48.png" alt="OpenXrypt Logo">OpenXrypt</h2>
+    <h2><img src="/imgs/icon48.png" alt="OpenXrypt Logo" />OpenXrypt</h2>
     <div class="card">
       <button id="encrypt">Encrypt</button>
       <button id="addKey">Manage Keys</button>

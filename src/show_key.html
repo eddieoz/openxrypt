@@ -3,12 +3,20 @@
   <head>
     <title>Public Key</title>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
-
+      @font-face {
+        font-family: "Montserrat";
+        src: url("/fonts/Montserrat-Regular.ttf") format("truetype");
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: "Montserrat";
+        src: url("/fonts/Montserrat-Bold.ttf") format("truetype");
+        font-weight: 600;
+      }
       body {
         margin: 0 auto;
         max-width: 650px;
-        font-family: 'Montserrat', sans-serif;
+        font-family: "Montserrat", sans-serif;
       }
       h2 {
         display: flex;
@@ -38,7 +46,7 @@
     </style>
   </head>
   <body>
-    <h2><img src="/imgs/icon48.png" alt="OpenXrypt Logo">Public Key</h2>
+    <h2><img src="/imgs/icon48.png" alt="OpenXrypt Logo" />Public Key</h2>
     <div class="card">
       <textarea id="publicKey" readonly></textarea>
     </div>

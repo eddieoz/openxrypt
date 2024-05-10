@@ -15,7 +15,7 @@ OpenXrypt is a Chrome extension designed to provide secure and encrypted communi
 1. **Install Extension:** Add OpenXrypt to your Chrome browser.
 2. **Setup Keys:**
    - Add GPG (armored) public keys for your contacts.
-   - Add GPG (armored) your own private key for decryption.
+   - Add GPG (armored) your own private key for decryption (recommended ECC-25519 - size/speed)
 3. **Encrypt & Decrypt:**
    - **Encrypt:** Select text in a direct message and click the "Encrypt" button in the popup.
    - **Decrypt:** Encrypted messages will be automatically decrypted and replaced with readable text.
