@@ -38,6 +38,7 @@ OpenXrypt is a Chrome extension designed to provide secure and encrypted communi
 2. Open the Chrome Extensions page by navigating to `chrome://extensions/`.
 3. Enable "Developer mode" using the toggle switch.
 4. Click "Load unpacked" and select the cloned/downloaded `openxrypt` folder.
+5. Close and reopen the browser to correctly load the extension.
 
 ### Key Management
 
@@ -63,9 +64,10 @@ OpenXrypt is a Chrome extension designed to provide secure and encrypted communi
 
 #### Encrypt Text
 
-1. Go and DM one of your contacts that you have already added a public key
+1. Go and DM one of your contacts that you have already added a public key (from Messages left menu)
+![](imgs/opnxrpt-send.msg.png)
 2. Write a message
-3. Selected the entire messade (CTRL + A)
+3. Selected the entire messade (CTRL + A or CMD + A)
 4. Open the OpenXrypt popup by clicking the extension icon.
 5. Click the **Encrypt** button.
 6. The selected text will be encrypted and replaced.
