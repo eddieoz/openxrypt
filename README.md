@@ -75,6 +75,25 @@ OpenXrypt is a Chrome extension designed to provide secure and encrypted communi
 
 Encrypted messages will be automatically decrypted on the X website.
 
+#### My pubkey
+
+If you want to try, drop me a DM on X. Just add `@eddieoz` and the pubkey below.
+
+```
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEZj4wahYJKwYBBAHaRw8BAQdAFYhu0HUpfn3Iku+KFGghJdYB1HefU4cBF5u2
+rhmI5Ne0HEVkZGllT3ogKHVzZWQgZm9yIE9wZW5YcnlwdCmIlgQTFggAPhYhBBOC
+HcMytdy4w1uDNtbLM3XlJgVNBQJmPjBqAhsDBQkB4TOABQsJCAcCBhUKCQgLAgQW
+AgMBAh4BAheAAAoJENbLM3XlJgVNKSsA/RIKL5wyO8lWV5kimZRYJd1WZdrQ58NR
+ICKBBvULfr/0AQCNHSJV9yeyGa3HFFj3EXDlN1fSW+oTHgoZHd7VCpTjD7g4BGY+
+MGoSCisGAQQBl1UBBQEBB0Cn4crTW1h2kp3oOtd4If5wP8APiHLiorrM7DxyfJEr
+MAMBCAeIfgQYFggAJhYhBBOCHcMytdy4w1uDNtbLM3XlJgVNBQJmPjBqAhsMBQkB
+4TOAAAoJENbLM3XlJgVNdAAA/iM4XMoyN3JLxLD//WkPVKV7fb04JT5tbWCH3qbR
+8SvOAQD4aQUBwfleQQswPLoJQcV8+lT7PvQQoUX4heNjqeb1Bg==
+=ifDj
+-----END PGP PUBLIC KEY BLOCK-----
+```
 
 #### Setup for Development
 
