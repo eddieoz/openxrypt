@@ -131,7 +131,12 @@ async function getGPGFingerprint(publicKey) {
 // Encrypt the text using PGP
 async function encryptTextPGP(text, recipientPublicKeys) {
   try {
-    const message = await openpgp.createMessage({ text });
+    // Add lock marker after the text
+    const modifiedText = `${text} 🔒`;
+
+    // Create a message object from the modified text
+    const message = await openpgp.createMessage({  text: modifiedText });
+        
     const recipientKeys = await Promise.all(
       recipientPublicKeys.map((key) => openpgp.readKey({ armoredKey: key }))
     );
