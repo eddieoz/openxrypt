@@ -70,8 +70,8 @@ OpenXrypt is a Chrome extension designed to provide secure and encrypted communi
 3. Selected the entire messade (CTRL + A or CMD + A)
 4. Open the OpenXrypt popup by clicking the extension icon.
 5. Click the **Encrypt** button.
-6. The selected text will be encrypted and replaced.
-7. Send the message.
+   - The selected text will be encrypted and replaced.
+7. Send the message on X.
 
 #### Automatic Decryption
 
