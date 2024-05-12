@@ -41,7 +41,25 @@ async function decryptPGPMessage(message) {
       decryptionKeys: [privateKey],
     });
 
-    return decryptedMessage.data;
+    // Consider the msg document format
+    // {
+    //   "event": "xrypt.[msg_type].[event_type]",
+    //   "params": {
+    //     "content": {
+    //       "type": "text",
+    //       "text": base64("hello!")
+    //     }
+    //   }
+    // }
+
+    // Decode from Base64 then decode URI components
+    const decodedData = JSON.parse(decryptedMessage.data)
+
+    const decodedText = decodeURIComponent(atob(decodedData.params.content.text).split('').map(c => {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return decodedText;
   } catch (error) {
     console.error("Error decrypting PGP message:", error);
     return "[Decryption Failed]";
@@ -131,11 +149,9 @@ async function getGPGFingerprint(publicKey) {
 // Encrypt the text using PGP
 async function encryptTextPGP(text, recipientPublicKeys) {
   try {
-    // Add lock marker after the text
-    const modifiedText = `${text} 🔒`;
-
+    
     // Create a message object from the modified text
-    const message = await openpgp.createMessage({  text: modifiedText });
+    const message = await openpgp.createMessage({ text });
         
     const recipientKeys = await Promise.all(
       recipientPublicKeys.map((key) => openpgp.readKey({ armoredKey: key }))
@@ -166,7 +182,32 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
         extensionUserHandle
       );
 
-      const encryptedText = await encryptTextPGP(selectedText, [
+      // Create a formatted document in the format that allow future developments:
+      // Based on docs/protocol/simplex-chat.md
+      // {
+      //   "event": "xrypt.[msg_type].[event_type]",
+      //   "params": {
+      //     "content": {
+      //       "type": "text",
+      //       "text": base64("hello!")
+      //     }
+      //   }
+      // }
+
+      // Add lock marker after the text
+      // Encode text to UTF-8 then to Base64
+      const base64Text = btoa(encodeURIComponent(`${selectedText} 🔒`).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+      const xryptDocument = {
+        "event": "xrypt.msg.new",
+        "params": {
+          "content": {
+            "type": "text",
+            "text": base64Text
+          }
+        }
+      }
+
+      const encryptedText = await encryptTextPGP(JSON.stringify(xryptDocument), [
         recipientPublicKey,
         extensionUserPublicKey,
       ]);
@@ -191,17 +232,24 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
 function findTwitterHandle() {
   // Find the section containing the conversation or profile details
   const section = document.querySelector('section[aria-label="Section details"]') ||
-                  document.querySelector('[aria-labelledby="detail-header"]') ||
+                  document.querySelector('section[aria-labelledby="detail-header"]') ||
                   document.querySelector('[data-testid="conversation-header"]') ||
                   document.querySelector('[aria-labelledby*="conversation-title"]');
 
   if (section) {
     // Try to find the handle from a preceding link
-    const link = section.querySelector('a[href*="/"]');
-    if (link) {
-      const handleMatch = link.href.match(/\/([^\/?]+)(?:\?|$)/);
-      if (handleMatch) return `@${handleMatch[1]}`;
+    const scrooler = section.querySelector('[data-testid="DmScrollerContainer"]')
+    if (scrooler) {
+      const link = scrooler.querySelector('a[href*="/"]');
+      if (link) {
+        const handleMatch = link.href.match(/\/([^\/?]+)(?:\?|$)/);
+        if (handleMatch) {
+          return `@${handleMatch[1]}`;
+        }
+
+      }
     }
+    
   }
 
   // Default value if the handle is not found
