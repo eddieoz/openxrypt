@@ -175,6 +175,14 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
   const extensionUserHandle = findUsernameFromInitialState();
   const selectedText = window.getSelection().toString();
 
+  // Check for emojis in the selected text. Temporary workaround for twitter treatment of selected text.
+  const emojiPattern = /[\u231A-\uDFFF\u200D\u263A-\uFFFF]/;
+  if (emojiPattern.test(selectedText)) {
+    alert("Please do not send messages with emojis.");
+    sendResponse({ status: "error", message: "Emojis are not allowed." });
+    return;
+  }
+
   if (selectedText.length > 0) {
     try {
       const recipientPublicKey = await retrieveUserPublicKey(twitterHandle);
