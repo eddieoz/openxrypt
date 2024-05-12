@@ -1,14 +1,18 @@
-## OpenXrypt: Upgrade Your Social Media Privacy (Proof-of-Concept)
+## OpenXrypt: Secure Direct Messaging for Social Media (Proof-of-Concept)
 
-OpenXrypt is a Chrome extension designed to provide secure and encrypted communication on social media platforms, particularly on X (formerly known as Twitter). Utilizing OpenPGP encryption standards, OpenXrypt aims to help you protect your privacy and secure sensitive information.
+OpenXrypt is a Chrome extension that provides secure and encrypted communication on social media platforms, particularly for direct messages (DMs) on X (formerly known as Twitter). It utilizes the OpenPGP encryption standard to help protect the privacy of your communications and ensure the confidentiality of sensitive information.
 
-### Features
+## The Importance of Secure Communication
+Social media platforms have become integral parts of our daily lives, facilitating real-time communication, information sharing, and community building. However, the inherent nature of these platforms often raises concerns regarding user privacy and data security. Unencrypted messages and personal information are susceptible to potential surveillance, data breaches, and unauthorized access, posing significant risks to individuals and organizations.
 
-- **Automatic Encryption & Decryption:** Automatically encrypt and decrypt messages using OpenPGP standards.
-- **Passphrase Management:** Securely set, reset, and manage your passphrase.
-- **Key Management:** Add, edit, and delete GPG public/private keys.
-- **Multiple Key Encryption:** Encrypt messages for multiple recipients simultaneously.
-- **Direct Message (DM) Compatibility:** Seamless integration with X (formerly Twitter) direct messaging.
+OpenXrypt recognizes the critical need for secure communication channels, particularly in an era where privacy violations and data mishandling have become increasingly prevalent. By offering robust encryption capabilities, OpenXrypt aims to empower users to engage in secure conversations, share sensitive information, and express themselves freely without the fear of unauthorized monitoring or interception.
+
+## Key Features
+
+- **End-to-End Encryption:** Encrypts messages using OpenPGP to ensure only the sender and recipient can access the content.
+- **Automatic Encryption and Decryption:** OpenXrypt seamlessly integrates with X (formerly Twitter) direct messaging, automatically encrypting and decrypting messages using OpenPGP standards, ensuring that sensitive information remains protected during transmission and storage.
+- **Passphrase Management:** Users can securely set, reset, and manage their passphrases, enabling them to maintain control over their encryption keys and ensure the confidentiality of their communications.
+- **Key Management:** OpenXrypt provides a user-friendly interface for adding, editing, and deleting GPG public and private keys, allowing users to manage their encryption keys and those of their contacts with ease.
 
 ### Screenshots
 
