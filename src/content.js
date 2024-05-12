@@ -218,6 +218,7 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
         status: "success",
         message: "Text encrypted and ready to send!",
       });
+
     } catch (err) {
       console.error(err);
       sendResponse({ status: "error", message: "Failed to encrypt text." });

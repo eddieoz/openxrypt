@@ -105,7 +105,7 @@ document.getElementById("encrypt").addEventListener("click", () => {
         { action: "encryptText" },
         (response) => {
           if (response && response.status === "success") {
-            alert(response.message);
+            // alert(response.message);
           } else {
             alert("Failed to encrypt text.");
           }
