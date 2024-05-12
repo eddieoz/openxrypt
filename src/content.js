@@ -262,9 +262,12 @@ function findTwitterHandle() {
   // Try to find the user in the DM popup if available in main X screen
   const dmDrawer = document.querySelector('div[data-testid="DMDrawer"]');
   if (dmDrawer){
+    console.log(dmDrawer)
     const dmDrawerHeader = dmDrawer.querySelector('div[data-testid="DMDrawerHeader"]');
     if (dmDrawerHeader) {
-      const handleElement = dmDrawerHeader.querySelector('div[dir="ltr"]');
+      console.log(dmDrawerHeader)
+      const handleElement = dmDrawerHeader.querySelector('span[dir="ltr"]');
+      console.log(handleElement)
       if (handleElement && handleElement.textContent.startsWith('@')) {
         return handleElement.textContent.trim();
       }
