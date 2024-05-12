@@ -61,7 +61,7 @@ async function decryptPGPMessage(message) {
 
     return decodedText;
   } catch (error) {
-    console.error("Error decrypting PGP message:", error);
+    // console.error("Error decrypting PGP message:", error);
     return "[Decryption Failed]";
   }
 }
