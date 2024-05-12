@@ -245,21 +245,32 @@ function findTwitterHandle() {
       if (handleMatch) {
         return `@${handleMatch[1]}`;
       }
-    } else {
-      // Try to find the handle from a preceding link
-      const scrooler = section.querySelector('[data-testid="DmScrollerContainer"]')
-      if (scrooler) {
-        const link = scrooler.querySelector('a[href*="/"]');
-        if (link) {
-          const handleMatch = link.href.match(/\/([^\/?]+)(?:\?|$)/);
-          if (handleMatch) {
-            return `@${handleMatch[1]}`;
-          }
-
-        }  
+    } 
+    // Try to find the handle from a preceding link
+    const scrooler = section.querySelector('[data-testid="DmScrollerContainer"]')
+    if (scrooler) {
+      const link = scrooler.querySelector('a[href*="/"]');
+      if (link) {
+        const handleMatch = link.href.match(/\/([^\/?]+)(?:\?|$)/);
+        if (handleMatch) {
+          return `@${handleMatch[1]}`;
+        }
       }
     }
   }
+
+  // Try to find the user in the DM popup if available in main X screen
+  const dmDrawer = document.querySelector('div[data-testid="DMDrawer"]');
+  if (dmDrawer){
+    const dmDrawerHeader = dmDrawer.querySelector('div[data-testid="DMDrawerHeader"]');
+    if (dmDrawerHeader) {
+      const handleElement = dmDrawerHeader.querySelector('div[dir="ltr"]');
+      if (handleElement && handleElement.textContent.startsWith('@')) {
+        return handleElement.textContent.trim();
+      }
+    }
+  }
+  
   // Default value if the handle is not found
   return "@unknown_dest_user";
 }
