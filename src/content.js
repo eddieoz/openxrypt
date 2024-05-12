@@ -232,26 +232,34 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
 function findTwitterHandle() {
   // Find the section containing the conversation or profile details
   const section = document.querySelector('section[aria-label="Section details"]') ||
-                  document.querySelector('section[aria-labelledby="detail-header"]') ||
-                  document.querySelector('[data-testid="conversation-header"]') ||
-                  document.querySelector('[aria-labelledby*="conversation-title"]');
+                  document.querySelector('section[aria-labelledby="detail-header"]');
 
   if (section) {
-    // Try to find the handle from a preceding link
-    const scrooler = section.querySelector('[data-testid="DmScrollerContainer"]')
-    if (scrooler) {
-      const link = scrooler.querySelector('a[href*="/"]');
-      if (link) {
-        const handleMatch = link.href.match(/\/([^\/?]+)(?:\?|$)/);
-        if (handleMatch) {
-          return `@${handleMatch[1]}`;
-        }
+    
+    // Test if DM does't show the use info on top
+    // If it shows just an avatar with link, it gets the user from the avatar link
+    // otherwise it gets the user from the info
+    const topAvatar = section.querySelector('[data-testid="DM_Conversation_Avatar"]')
+    if (topAvatar){
+      const handleMatch = topAvatar.href.match(/\/([^\/?]+)(?:\?|$)/);
+      if (handleMatch) {
+        return `@${handleMatch[1]}`;
+      }
+    } else {
+      // Try to find the handle from a preceding link
+      const scrooler = section.querySelector('[data-testid="DmScrollerContainer"]')
+      if (scrooler) {
+        const link = scrooler.querySelector('a[href*="/"]');
+        if (link) {
+          const handleMatch = link.href.match(/\/([^\/?]+)(?:\?|$)/);
+          if (handleMatch) {
+            return `@${handleMatch[1]}`;
+          }
 
+        }  
       }
     }
-    
   }
-
   // Default value if the handle is not found
   return "@unknown_dest_user";
 }
