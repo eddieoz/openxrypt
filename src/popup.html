@@ -29,7 +29,7 @@
         margin-right: 10px;
       }
       .card {
-        margin: 20px 0;
+        margin-top: 20px;
         padding: 20px;
         background-color: #f9f9f9;
         border: 1px solid #ddd;
@@ -43,6 +43,7 @@
         font-size: 16px;
         border: 1px solid #ddd;
         border-radius: 4px;
+        box-sizing: border-box;
       }
       input[type="password"] {
         margin: 10px 0;
@@ -59,10 +60,16 @@
       img {
         padding: 20px;
       }
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
     </style>
   </head>
   <body>
-    <h2><img src="/imgs/icon48.png" alt="OpenXrypt Logo" />OpenXrypt</h2>
+    <h2><img src="/imgs/icon48.png" alt="OpenXrypt Logo" />
+      <a href="https://github.com/eddieoz/openxrypt" target="_blank">OpenXrypt</a>
+    </h2>
     <div class="card">
       <button id="encrypt">Encrypt</button>
       <button id="addKey">Manage Keys</button>
