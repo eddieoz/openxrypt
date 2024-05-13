@@ -1,4 +1,4 @@
-## OpenXrypt: Secure Direct Messaging for Social Media (Proof-of-Concept)
+## OpenXrypt: Secure Direct Messaging for Social Media
 
 OpenXrypt is a Chrome extension that provides secure and encrypted communication on social media platforms, particularly for direct messages (DMs) on X (formerly known as Twitter). It utilizes the OpenPGP encryption standard to help protect the privacy of your communications and ensure the confidentiality of sensitive information.
 
