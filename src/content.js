@@ -355,6 +355,99 @@ async function setSessionPassphrase(passphrase) {
   sessionStorage.setItem("sessionPassphrase", passphrase);
 }
 
+// Function to replace the text in the input with the encrypted version
+function replaceTextInInput(replacementText) {
+  const messageInput = document.querySelector('[contenteditable="true"][data-testid="dmComposerTextInput"]');
+  if (messageInput) {
+    messageInput.innerText = replacementText;
+    messageInput.value = replacementText;
+    console.log('message input: ', messageInput)
+
+    // Trigger the input event to update the DOM
+    const event = new Event('input', { bubbles: true });
+    messageInput.dispatchEvent(event);
+  }
+}
+
+async function handleEncryptAndSend() {
+  const messageInput = document.querySelector('[contenteditable="true"][data-testid="dmComposerTextInput"]');
+  if (messageInput) {
+    // Select the entire text in the input box
+    const range = document.createRange();
+    range.selectNodeContents(messageInput);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    // Retrieve the text from the selection
+    const messageText = selection.toString().trim();
+    console.log('original msg:', messageText);
+
+    if (messageText) {
+      const twitterHandle = findTwitterHandle();
+      const extensionUserHandle = findUsernameFromInitialState();
+
+      try {
+        const recipientPublicKey = await retrieveUserPublicKey(twitterHandle);
+        const extensionUserPublicKey = await retrieveUserPublicKeyFromPrivate(extensionUserHandle);
+
+        const base64Text = btoa(encodeURIComponent(`${messageText} 🔒`).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+        const xryptDocument = {
+          "event": "xrypt.msg.new",
+          "params": {
+            "content": {
+              "type": "text",
+              "text": base64Text
+            }
+          }
+        }
+
+        const encryptedText = await encryptTextPGP(JSON.stringify(xryptDocument), [recipientPublicKey, extensionUserPublicKey]);
+        console.log('encrypted msg:', encryptedText);
+
+        // Replace the selected text with the encrypted text
+        replaceSelectedText(encryptedText);
+
+        // Optionally, click the original send button
+        const sendButton = document.querySelector('[data-testid="dmComposerSendButton"]');
+        // if (sendButton) sendButton.click();
+      } catch (err) {
+        console.error('Failed to encrypt text:', err);
+        alert('Failed to encrypt text.');
+      }
+    } else {
+      alert('Message text cannot be empty.');
+    }
+  } else {
+    alert('Message input not found.');
+  }
+}
+
+
+
+// Function to inject Encrypt button before the Send button
+function injectEncryptButton() {
+  const sendButton = document.querySelector('[data-testid="dmComposerSendButton"]');
+  if (sendButton && !document.querySelector('#encryptAndSendButton')) {
+    const encryptButton = document.createElement('button');
+    encryptButton.id = 'encryptAndSendButton';
+    encryptButton.innerText = 'Encrypt';
+    encryptButton.style.marginRight = '10px'; // Add some space between buttons
+    sendButton.parentNode.insertBefore(encryptButton, sendButton);
+
+    // Add click event listener to the new button
+    encryptButton.addEventListener('click', handleEncryptAndSend);
+  }
+}
+
+// Call the function to inject the button
+injectEncryptButton();
+
+// Observe changes in the DOM to ensure the button is always injected
+const observer = new MutationObserver(injectEncryptButton);
+observer.observe(document.body, { childList: true, subtree: true });
+
+
 // Listen for messages from the popup or background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "encryptText") {
