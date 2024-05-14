@@ -231,7 +231,7 @@ async function encryptTextPGP(text, recipientPublicKeys) {
 
 // Encrypt and replace the selected text using PGP for two keys
 async function encryptAndReplaceSelectedTextPGP(sendResponse) {
-  const userHandle =  findWhatsappNumber();
+  const userHandle =  getUserId();
   const extensionUserHandle = getSenderId();
   const selectedText = window.getSelection().toString();
 
