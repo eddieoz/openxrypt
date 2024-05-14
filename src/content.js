@@ -1,3 +1,62 @@
+
+function getWebsite(){
+  const names = location.href.split("/")[2].split('.');
+  if(names.length > 2){
+      // return second name
+      return names[1]
+  }
+  return names[0]
+}
+
+function getUserId(){
+  switch(getWebsite()) {
+      case 'twitter':
+        return findTwitterHandle();
+      case 'whatsapp':
+        const user = findWhatsappNumber();
+        return user;
+      default:
+          console.error('Error trying retrieving website');        
+    }
+}
+
+function getSenderId(){
+  switch(getWebsite()) {
+      case 'twitter':
+        return findUsernameFromInitialState();
+      case 'whatsapp':
+        return findWhatsappNumberSender();
+      default:
+          console.error('Error trying retrieving website');        
+    }
+}
+
+function getElementForDecrypt(){
+  switch(getWebsite()) {
+      case 'twitter':
+        return  document.querySelectorAll("body, body *");
+      case 'whatsapp':
+        return document.querySelectorAll('div[data-id^="false_"] span[dir="ltr"] span, div[data-id^="true_"] span[dir="ltr"] span');
+      default:
+          console.error('Error trying retrieving website');        
+    }
+}
+
+
+function findWhatsappNumber() {
+  //get the id of the first screen message
+  // Problem with this approach: Requires that you have already received a message
+  const messageId = document.querySelectorAll('div[data-id^="false_"]')[0].dataset.id.toString();
+  const number = messageId.split('@')[0].slice(6);
+
+  return number;
+}
+function findWhatsappNumberSender() {
+  const number = localStorage.getItem("last-wid-md").split(':')[0].replace('"', '');
+
+  return number;
+}
+
 // Retrieve the session passphrase securely
 async function getSessionPassphrase() {
   if (!sessionPassphrase) {
@@ -8,7 +67,7 @@ async function getSessionPassphrase() {
 
 // Retrieve private key of the extension user from storage
 async function retrieveExtensionUserPrivateKey() {
-  const extensionUserHandle = findUsernameFromInitialState();
+  const extensionUserHandle = getSenderId();
   return new Promise((resolve, reject) => {
     chrome.storage.local.get({ private_keys: {} }, (result) => {
       const keys = result.private_keys;
@@ -61,7 +120,7 @@ async function decryptPGPMessage(message) {
 
     return decodedText;
   } catch (error) {
-    // console.error("Error decrypting PGP message:", error);
+     // console.error("Error decrypting PGP message:", error);
     return "[Decryption Failed]";
   }
 }
@@ -71,11 +130,12 @@ async function autoDecryptAllXryptTexts() {
   const pgpBlockRegex =
     /-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----/gs;
 
-  const elements = document.querySelectorAll("body, body *");
+  const elements = getElementForDecrypt();
   for (const el of elements) {
     if (
       el.childNodes.length === 1 &&
-      el.childNodes[0].nodeType === Node.TEXT_NODE
+      el.childNodes[0].nodeType === Node.TEXT_NODE ||
+      el.textContent.length > 60
     ) {
       const textContent = el.textContent;
       const matches = textContent.match(pgpBlockRegex);
@@ -96,10 +156,10 @@ async function autoDecryptAllXryptTexts() {
 function retrieveUserPublicKey(username) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get({ keys: {} }, (result) => {
-      const keys = result.keys;
+      const keys = result.keys;      
       if (keys[username]) {
         resolve(keys[username]);
-      } else {
+      } else {        
         reject(`Public key not found for ${username}`);
       }
     });
@@ -171,8 +231,8 @@ async function encryptTextPGP(text, recipientPublicKeys) {
 
 // Encrypt and replace the selected text using PGP for two keys
 async function encryptAndReplaceSelectedTextPGP(sendResponse) {
-  const twitterHandle = findTwitterHandle();
-  const extensionUserHandle = findUsernameFromInitialState();
+  const userHandle =  findWhatsappNumber();
+  const extensionUserHandle = getSenderId();
   const selectedText = window.getSelection().toString();
 
   // Check for emojis in the selected text. Temporary workaround for twitter treatment of selected text.
@@ -185,7 +245,7 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
 
   if (selectedText.length > 0) {
     try {
-      const recipientPublicKey = await retrieveUserPublicKey(twitterHandle);
+      const recipientPublicKey = await retrieveUserPublicKey(userHandle);
       const extensionUserPublicKey = await retrieveUserPublicKeyFromPrivate(
         extensionUserHandle
       );
@@ -384,11 +444,11 @@ async function handleEncryptAndSend() {
     console.log('original msg:', messageText);
 
     if (messageText) {
-      const twitterHandle = findTwitterHandle();
-      const extensionUserHandle = findUsernameFromInitialState();
+      const userHandle = getUserId();
+      const extensionUserHandle = getSenderId();
 
       try {
-        const recipientPublicKey = await retrieveUserPublicKey(twitterHandle);
+        const recipientPublicKey = await retrieveUserPublicKey(userHandle);
         const extensionUserPublicKey = await retrieveUserPublicKeyFromPrivate(extensionUserHandle);
 
         const base64Text = btoa(encodeURIComponent(`${messageText} 🔒`).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
