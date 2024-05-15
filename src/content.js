@@ -135,7 +135,7 @@ async function autoDecryptAllXryptTexts() {
     if (
       el.childNodes.length === 1 &&
       el.childNodes[0].nodeType === Node.TEXT_NODE ||
-      el.textContent.length > 60
+      (getWebsite() === 'whatsapp'  && el.textContent.length > 60)
     ) {
       const textContent = el.textContent;
       const matches = textContent.match(pgpBlockRegex);
