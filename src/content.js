@@ -36,7 +36,8 @@ function getElementForDecrypt(){
       case 'twitter':
         return  document.querySelectorAll("body, body *");
       case 'whatsapp':
-        return document.querySelectorAll('div[data-id^="false_"] span[dir="ltr"] span, div[data-id^="true_"] span[dir="ltr"] span');
+        const mainEl = document.querySelector('#main')        
+        return mainEl.querySelectorAll('div[data-id^="false_"] span[dir="ltr"] span, div[data-id^="true_"] span[dir="ltr"] span');
       default:
           console.error('Error trying retrieving website');        
     }
@@ -428,9 +429,21 @@ function replaceTextInInput(replacementText) {
     messageInput.dispatchEvent(event);
   }
 }
+function getTextInput(){
+  
+  switch(getWebsite()) {
+    case 'twitter':
+      return  document.querySelector('[contenteditable="true"][data-testid="dmComposerTextInput"]');
+    case 'whatsapp':
+      const mainEl = document.querySelector('#main')
+      return mainEl.querySelector('div[contenteditable="true"]')
+    default:
+        console.error('Error trying retrieving website');        
+  }
+}
 
 async function handleEncryptAndSend() {
-  const messageInput = document.querySelector('[contenteditable="true"][data-testid="dmComposerTextInput"]');
+  const messageInput = getTextInput()
   if (messageInput) {
     // Select the entire text in the input box
     const range = document.createRange();
@@ -483,11 +496,24 @@ async function handleEncryptAndSend() {
   }
 }
 
+function getSenderButton(){
+  
+  switch(getWebsite()) {
+    case 'twitter':
+      return  document.querySelector('[data-testid="dmComposerSendButton"]');
+    case 'whatsapp':
+      const elements = Array.from(document.querySelectorAll('#main footer button[aria-label]'));
+      const lastElement = elements[elements.length - 1];
+      return lastElement;
+    default:
+        console.error('Error trying retrieving website');        
+  }
+}
 
 
 // Function to inject Encrypt button before the Send button
 function injectEncryptButton() {
-  const sendButton = document.querySelector('[data-testid="dmComposerSendButton"]');
+  const sendButton = getSenderButton();
   if (sendButton && !document.querySelector('#encryptAndSendButton')) {
     const encryptButton = document.createElement('button');
     encryptButton.id = 'encryptAndSendButton';
