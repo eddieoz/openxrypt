@@ -519,6 +519,11 @@ function injectEncryptButton() {
     encryptButton.id = 'encryptAndSendButton';
     encryptButton.innerText = 'Encrypt';
     encryptButton.style.marginRight = '10px'; // Add some space between buttons
+    encryptButton.style.backgroundColor = '#1884cb';
+    encryptButton.style.borderRadius = '5px';
+    encryptButton.style.padding = '5px';
+    encryptButton.style.color = 'aliceblue';
+    encryptButton.style.border = 'none';
     sendButton.parentNode.insertBefore(encryptButton, sendButton);
 
     // Add click event listener to the new button
