@@ -268,6 +268,16 @@ function findTwitterHandle() {
     }
   }
 
+  const topAvatar = document.querySelector('[data-testid="DM_Conversation_Avatar"]')
+  if (topAvatar){
+    const handleMatch = topAvatar.href.match(/\/([^\/?]+)(?:\?|$)/);
+    if (handleMatch) {
+      return `@${handleMatch[1]}`;
+    }
+  }
+
+   
+
   // Try to find the user in the DM popup if available in main X screen
   const dmDrawer = document.querySelector('div[data-testid="DMDrawer"]');
   if (dmDrawer){
@@ -325,23 +335,31 @@ function findUsernameFromInitialState() {
 
 // Replace the selected text with the encrypted version
 function replaceSelectedText(replacementText) {
-  const selection = window.getSelection();
-  if (selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    range.deleteContents();
-    const textNode = document.createTextNode(replacementText);
-    range.insertNode(textNode);
+  // Replace the content of the message input with the encrypted text
 
-    selection.removeAllRanges();
-    const newRange = document.createRange();
-    newRange.selectNodeContents(textNode);
-    selection.addRange(newRange);
+  // Verify if it is X mobile
+  let messageInput = document.querySelector('[data-testid="dmComposerTextInput"]');
+  if (messageInput.tagName === 'TEXTAREA') {
+    messageInput.value = replacementText;
+  } else {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      const textNode = document.createTextNode(replacementText);
+      range.insertNode(textNode);
 
-    const event = new Event("input", { bubbles: true });
-    const editableElement = range.startContainer.parentNode.closest(
-      '[contenteditable="true"], textarea, input'
-    );
-    if (editableElement) editableElement.dispatchEvent(event);
+      selection.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(textNode);
+      selection.addRange(newRange);
+
+      const event = new Event("input", { bubbles: true });
+      const editableElement = range.startContainer.parentNode.closest(
+        '[contenteditable="true"], textarea, input'
+      );
+      if (editableElement) editableElement.dispatchEvent(event);
+    }
   }
 }
 
@@ -355,22 +373,11 @@ async function setSessionPassphrase(passphrase) {
   sessionStorage.setItem("sessionPassphrase", passphrase);
 }
 
-// Function to replace the text in the input with the encrypted version
-function replaceTextInInput(replacementText) {
-  const messageInput = document.querySelector('[contenteditable="true"][data-testid="dmComposerTextInput"]');
-  if (messageInput) {
-    messageInput.innerText = replacementText;
-    messageInput.value = replacementText;
-    console.log('message input: ', messageInput)
-
-    // Trigger the input event to update the DOM
-    const event = new Event('input', { bubbles: true });
-    messageInput.dispatchEvent(event);
-  }
-}
-
 async function handleEncryptAndSend() {
-  const messageInput = document.querySelector('[contenteditable="true"][data-testid="dmComposerTextInput"]');
+  
+  let messageText = ''
+  // First, try to find the input for desktop
+  let messageInput = document.querySelector('[contenteditable="true"][data-testid="dmComposerTextInput"]');
   if (messageInput) {
     // Select the entire text in the input box
     const range = document.createRange();
@@ -380,9 +387,17 @@ async function handleEncryptAndSend() {
     selection.addRange(range);
 
     // Retrieve the text from the selection
-    const messageText = selection.toString().trim();
+    messageText = selection.toString().trim();
     console.log('original msg:', messageText);
+  }
 
+  // If not found, try the input for mobile
+  if (!messageInput) {
+    messageInput = document.querySelector('textarea[data-testid="dmComposerTextInput"]');
+    messageText = messageInput.textContent;
+  }
+
+  if (messageInput) {
     if (messageText) {
       const twitterHandle = findTwitterHandle();
       const extensionUserHandle = findUsernameFromInitialState();
@@ -403,7 +418,6 @@ async function handleEncryptAndSend() {
         }
 
         const encryptedText = await encryptTextPGP(JSON.stringify(xryptDocument), [recipientPublicKey, extensionUserPublicKey]);
-        console.log('encrypted msg:', encryptedText);
 
         // Replace the selected text with the encrypted text
         replaceSelectedText(encryptedText);
@@ -422,8 +436,6 @@ async function handleEncryptAndSend() {
     alert('Message input not found.');
   }
 }
-
-
 
 // Function to inject Encrypt button before the Send button
 function injectEncryptButton() {
