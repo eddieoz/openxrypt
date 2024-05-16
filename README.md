@@ -1,16 +1,20 @@
-## OpenXrypt: Secure Direct Messaging for Social Media
+## OpenXrypt: Secure and Private Direct Messaging for Social Media
 
-OpenXrypt is a Chrome extension that provides secure and encrypted communication on social media platforms, particularly for direct messages (DMs) on X (formerly known as Twitter). It utilizes the OpenPGP encryption standard to help protect the privacy of your communications and ensure the confidentiality of sensitive information.
+OpenXrypt is a Chrome extension that provides secure and encrypted communication on social media platforms. It utilizes the OpenPGP encryption standard to help protect the privacy of your communications and ensure the confidentiality of sensitive information.
+
+## Compatible Platforms
+ - Twitter DMs
+ - Whatsapp Web
 
 ## The Importance of Secure Communication
-Social media platforms have become integral parts of our daily lives, facilitating real-time communication, information sharing, and community building. However, the inherent nature of these platforms often raises concerns regarding user privacy and data security. Unencrypted messages and personal information are susceptible to potential surveillance, data breaches, and unauthorized access, posing significant risks to individuals and organizations.
+Social media platforms have become integral parts of our daily lives, facilitating real-time communication, information sharing, and community building. However, the inherent nature of these platforms often raises concerns regarding user privacy and data security. Unencrypted messages and personal information are susceptible to unauthorized ads and access, potential surveillance and/or data breaches, posing significant risks to individuals and organizations.
 
 OpenXrypt recognizes the critical need for secure communication channels, particularly in an era where privacy violations and data mishandling have become increasingly prevalent. By offering robust encryption capabilities, OpenXrypt aims to empower users to engage in secure conversations, share sensitive information, and express themselves freely without the fear of unauthorized monitoring or interception.
 
 ## Key Features
 
 - **End-to-End Encryption:** Encrypts messages using OpenPGP to ensure only the sender and recipient can access the content.
-- **Automatic Encryption and Decryption:** OpenXrypt seamlessly integrates with X (formerly Twitter) direct messaging, automatically encrypting and decrypting messages using OpenPGP standards, ensuring that sensitive information remains protected during transmission and storage.
+- **Automatic Encryption and Decryption:** OpenXrypt seamlessly integrates with the compatible platforms, automatically encrypting and decrypting messages using OpenPGP standards, ensuring that sensitive information remains protected during transmission and storage.
 - **Passphrase Management:** Users can securely set, reset, and manage their passphrases, enabling them to maintain control over their encryption keys and ensure the confidentiality of their communications.
 - **Key Management:** OpenXrypt provides a user-friendly interface for adding, editing, and deleting GPG public and private keys, allowing users to manage their encryption keys and those of their contacts with ease.
 
@@ -57,11 +61,13 @@ OpenXrypt recognizes the critical need for secure communication channels, partic
 
 1. Open the **Manage Keys** section via the popup.
 2. Enter the X handle and paste the contact's public key.
+   - For Whatsapp Web, enter the mobile number ex. 552134562938 and the contact's public key
 3. Click **Add Key**.
 
 #### Private Key Management
 
 1. Enter your X handle and paste your private key.
+   - For Whatsapp Web, enter your mobile number ex. 552134562938 and paste your private key.
 2. Click **Add Private Key**.
 
 ### How to Encrypt and Decrypt Messages
@@ -136,11 +142,12 @@ This project is licensed under the MIT License.
 
 2. **Can I use OpenXrypt with other platforms?**
 
-   Currently, OpenXrypt is optimized for X direct messages but can be extended to other platforms.
+   Currently, OpenXrypt is optimized for X direct messages and Whatsapp Web, but can be extended to other platforms.
 
 3. **Is my data stored online?**
 
    No, OpenXrypt stores encryption keys locally in your browser's storage.
+
 
 ### Contact
 
