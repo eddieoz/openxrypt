@@ -10,8 +10,8 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://*.twitter.com/*"],
-      "js": ["lib/openpgp.min.js", "src/content.js"],
+      "matches": ["*://*.twitter.com/*", "*://*.whatsapp.com/*"],
+      "js": ["lib/openpgp.min.js", "src/actions.js", "src/content.js"],
       "run_at": "document_idle"
     }
   ],
