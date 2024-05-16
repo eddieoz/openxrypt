@@ -123,10 +123,18 @@ fPpU+z70EKFF+IXjY6nm9QY=
 - Commit your changes with clear messages.
 - Push your feature branch and submit a PR.
 
-### To-do
-- Encrypted public timeline posts (maybe use symmetric encryption with X handle, just to keep it fuzzy).
+#### To-do
+- Encrypted public timeline posts ('maybe' use symmetric encryption with X handle, just to keep it fuzzy).
 - Encrypted group messages.
-- Extend the extension to cover more web messengers like WhatsApp, Telegram, and others.
+- Extend the extension to cover more web messengers like Telegram web, and others.
+- Try newer algorithms like NaCL + Chacha20 to increase performance. Study the trade-offs.
+
+#### Known limitations
+
+- It does not encrypt images and emojis
+- Can't encrypt messages for a group yet
+- Can't encrypt messages in timeline
+- Limited use of cryptography through opengpg yet.
 
 ### License
 
