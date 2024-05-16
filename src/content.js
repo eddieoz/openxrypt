@@ -43,18 +43,29 @@ function getElementForDecrypt(){
     }
 }
 
-
 function findWhatsappNumber() {
-  //get the id of the first screen message
-  // Problem with this approach: Requires that you have already received a message
-  const messageId = document.querySelectorAll('div[data-id^="false_"]')[0].dataset.id.toString();
-  const number = messageId.split('@')[0].slice(6);
-
-  return number;
+  // Get the first message element that contains the data-id attribute with a phone number
+  const messageElement = document.querySelector('div[data-id*="@c.us_"]');
+  
+  // Check if the element exists and has the data-id attribute
+  if (messageElement && messageElement.dataset.id) {
+    const dataId = messageElement.dataset.id;
+    
+    // Extract the phone number from the data-id
+    const numberMatch = dataId.match(/true_(\d+?)@c\.us_/);
+    
+    // If a match is found, return the phone number
+    if (numberMatch) {
+      return numberMatch[1];
+    }
+  }
+  
+  // Return null if no valid number is found
+  return null;
 }
+
 function findWhatsappNumberSender() {
   const number = localStorage.getItem("last-wid-md").split(':')[0].replace('"', '');
-
   return number;
 }
 
@@ -136,7 +147,7 @@ async function autoDecryptAllXryptTexts() {
     if (
       el.childNodes.length === 1 &&
       el.childNodes[0].nodeType === Node.TEXT_NODE ||
-      (getWebsite() === 'whatsapp'  && el.textContent.length > 60)
+      (await getWebsite() === 'whatsapp'  && el.textContent.length > 60)
     ) {
       const textContent = el.textContent;
       const matches = textContent.match(pgpBlockRegex);
@@ -329,15 +340,31 @@ function findTwitterHandle() {
     }
   }
 
+  const topAvatar = document.querySelector('[data-testid="DM_Conversation_Avatar"]')
+  if (topAvatar){
+    const handleMatch = topAvatar.href.match(/\/([^\/?]+)(?:\?|$)/);
+    if (handleMatch) {
+      return `@${handleMatch[1]}`;
+    }
+  }
+
+  const scrooler = document.querySelector('[data-testid="DmScrollerContainer"]')
+    if (scrooler) {
+      const link = scrooler.querySelector('a[href*="/"]');
+      if (link) {
+        const handleMatch = link.href.match(/\/([^\/?]+)(?:\?|$)/);
+        if (handleMatch) {
+          return `@${handleMatch[1]}`;
+        }
+      }
+    }
+
   // Try to find the user in the DM popup if available in main X screen
   const dmDrawer = document.querySelector('div[data-testid="DMDrawer"]');
   if (dmDrawer){
-    console.log(dmDrawer)
     const dmDrawerHeader = dmDrawer.querySelector('div[data-testid="DMDrawerHeader"]');
     if (dmDrawerHeader) {
-      console.log(dmDrawerHeader)
       const handleElement = dmDrawerHeader.querySelector('span[dir="ltr"]');
-      console.log(handleElement)
       if (handleElement && handleElement.textContent.startsWith('@')) {
         return handleElement.textContent.trim();
       }
@@ -347,8 +374,6 @@ function findTwitterHandle() {
   // Default value if the handle is not found
   return "@unknown_dest_user";
 }
-
-
 
 // Find the username from the `window.__INITIAL_STATE__` JSON object
 function findUsernameFromInitialState() {
@@ -386,23 +411,32 @@ function findUsernameFromInitialState() {
 
 // Replace the selected text with the encrypted version
 function replaceSelectedText(replacementText) {
-  const selection = window.getSelection();
-  if (selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    range.deleteContents();
-    const textNode = document.createTextNode(replacementText);
-    range.insertNode(textNode);
+  // Replace the content of the message input with the encrypted text
 
-    selection.removeAllRanges();
-    const newRange = document.createRange();
-    newRange.selectNodeContents(textNode);
-    selection.addRange(newRange);
+  // Verify if it is X mobile
+  let messageInput = document.querySelector('textarea[data-testid="dmComposerTextInput"]');
+  // if (messageInput && messageInput.hasAttribute('tagName') && messageInput.tagName === 'TEXTAREA') {
+  if (messageInput) {
+    messageInput.value = replacementText;
+  } else {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      const textNode = document.createTextNode(replacementText);
+      range.insertNode(textNode);
 
-    const event = new Event("input", { bubbles: true });
-    const editableElement = range.startContainer.parentNode.closest(
-      '[contenteditable="true"], textarea, input'
-    );
-    if (editableElement) editableElement.dispatchEvent(event);
+      selection.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(textNode);
+      selection.addRange(newRange);
+
+      const event = new Event("input", { bubbles: true });
+      const editableElement = range.startContainer.parentNode.closest(
+        '[contenteditable="true"], textarea, input'
+      );
+      if (editableElement) editableElement.dispatchEvent(event);
+    }
   }
 }
 
@@ -422,18 +456,18 @@ function replaceTextInInput(replacementText) {
   if (messageInput) {
     messageInput.innerText = replacementText;
     messageInput.value = replacementText;
-    console.log('message input: ', messageInput)
 
     // Trigger the input event to update the DOM
     const event = new Event('input', { bubbles: true });
     messageInput.dispatchEvent(event);
   }
 }
-function getTextInput(){
+
+async function getTextInput(){
   
-  switch(getWebsite()) {
+  switch(await getWebsite()) {
     case 'twitter':
-      return  document.querySelector('[contenteditable="true"][data-testid="dmComposerTextInput"]');
+        return document.querySelector('[data-testid="dmComposerTextInput"]');
     case 'whatsapp':
       const mainEl = document.querySelector('#main')
       return mainEl.querySelector('div[contenteditable="true"]')
@@ -443,19 +477,28 @@ function getTextInput(){
 }
 
 async function handleEncryptAndSend() {
-  const messageInput = getTextInput()
+  
+  let messageText = ''
+  let messageInput = await getTextInput()
+  // let messageInput = document.querySelector('[data-testid="dmComposerTextInput"]');
+
   if (messageInput) {
-    // Select the entire text in the input box
-    const range = document.createRange();
-    range.selectNodeContents(messageInput);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
+    if (messageInput.tagName === 'TEXTAREA') {
+      messageText = messageInput.value;
+    } else {
+      // Select the entire text in the input box
+      const range = document.createRange();
+      range.selectNodeContents(messageInput);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+  
+      // Retrieve the text from the selection
+      messageText = selection.toString().trim();
+    }
 
-    // Retrieve the text from the selection
-    const messageText = selection.toString().trim();
-    console.log('original msg:', messageText);
-
+    // If not found, try the input for mobile
+    
     if (messageText) {
       const userHandle = getUserId();
       const extensionUserHandle = getSenderId();
@@ -476,13 +519,12 @@ async function handleEncryptAndSend() {
         }
 
         const encryptedText = await encryptTextPGP(JSON.stringify(xryptDocument), [recipientPublicKey, extensionUserPublicKey]);
-        console.log('encrypted msg:', encryptedText);
 
         // Replace the selected text with the encrypted text
         replaceSelectedText(encryptedText);
 
         // Optionally, click the original send button
-        const sendButton = document.querySelector('[data-testid="dmComposerSendButton"]');
+        // const sendButton = document.querySelector('[data-testid="dmComposerSendButton"]');
         // if (sendButton) sendButton.click();
       } catch (err) {
         console.error('Failed to encrypt text:', err);
@@ -509,7 +551,6 @@ function getSenderButton(){
         console.error('Error trying retrieving website');        
   }
 }
-
 
 // Function to inject Encrypt button before the Send button
 function injectEncryptButton() {
