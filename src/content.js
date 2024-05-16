@@ -373,8 +373,11 @@ function injectEncryptButton() {
     encryptButton.style.padding = '5px';
     encryptButton.style.color = 'aliceblue';
     encryptButton.style.border = 'none';
+    encryptButton.style.zIndex = '1000'; // Ensure the button is on top
+    encryptButton.style.position = 'relative'; // Ensure it stays within the normal flow
+
     if(globalThis.getWebsite() === 'whatsapp'){
-      sendButton.parentElement.setAttribute("style", "display: flex; flex-wrap: owrap; flex-direction: row;justify-content: flex-end;")
+      sendButton.parentElement.setAttribute("style", "display: flex; flex-wrap: nowrap; flex-direction: row; justify-content: flex-end;");
       encryptButton.style.marginRight = '33px';
     }
     sendButton.parentNode.insertBefore(encryptButton, sendButton);
