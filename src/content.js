@@ -4,7 +4,7 @@
 // Retrieve the session passphrase securely
 async function getSessionPassphrase() {
   if (!sessionPassphrase) {
-    return "[Decryption Failed - No Passphrase]";
+    return '[Decryption Failed - No Passphrase]';
   }
   return sessionPassphrase;
 }
@@ -29,7 +29,7 @@ async function decryptPGPMessage(message) {
   try {
     const privateKeyArmored = await retrieveExtensionUserPrivateKey();
     const passphrase = await getSessionPassphrase();
-    if (!passphrase || passphrase === "[Decryption Failed - No Passphrase]")
+    if (!passphrase || passphrase === '[Decryption Failed - No Passphrase]')
       return passphrase;
 
     const privateKey = await openpgp.decryptKey({
@@ -65,7 +65,7 @@ async function decryptPGPMessage(message) {
     return decodedText;
   } catch (error) {
      // console.error("Error decrypting PGP message:", error);
-    return "[Decryption Failed]";
+    return '[Decryption Failed]';
   }
 }
 
@@ -75,6 +75,8 @@ async function autoDecryptAllXryptTexts() {
     /-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----/gs;
 
   const elements = globalThis.getAction('decrypt');
+  if(elements){
+
   for (const el of elements) {
     if (
       el.childNodes.length === 1 &&
@@ -91,6 +93,7 @@ async function autoDecryptAllXryptTexts() {
           newContent = newContent.replace(match, decryptedText);
         }
         el.textContent = newContent;
+        }
       }
     }
   }
@@ -131,7 +134,7 @@ async function getPublicKeyFromPrivate(privateKey) {
     const key = await openpgp.readKey({ armoredKey: privateKey });
     return key.toPublic().armor();
   } catch (error) {
-    console.error("Error retrieving public key:", error);
+    console.error('Error retrieving public key:', error);
     return null;
   }
 }
@@ -143,9 +146,9 @@ async function getGPGFingerprint(publicKey) {
     return key
       .getFingerprint()
       .match(/.{1,4}/g)
-      .join(" ");
+      .join(' ');
   } catch (error) {
-    console.error("Error generating GPG fingerprint:", error);
+    console.error('Error generating GPG fingerprint:', error);
     return null;
   }
 }
@@ -168,8 +171,8 @@ async function encryptTextPGP(text, recipientPublicKeys) {
 
     return `${encrypted}`;
   } catch (error) {
-    console.error("Error encrypting text with PGP:", error);
-    return "[Encryption Failed]";
+    console.error('Error encrypting text with PGP:', error);
+    return '[Encryption Failed]';
   }
 }
 
@@ -182,8 +185,8 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
   // Check for emojis in the selected text. Temporary workaround for twitter treatment of selected text.
   const emojiPattern = /[\u231A-\uDFFF\u200D\u263A-\uFFFF]/;
   if (emojiPattern.test(selectedText)) {
-    alert("Please do not send messages with emojis.");
-    sendResponse({ status: "error", message: "Emojis are not allowed." });
+    alert('Please do not send messages with emojis.');
+    sendResponse({ status: 'error', message: 'Emojis are not allowed.' });
     return;
   }
 
@@ -227,13 +230,12 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
       replaceSelectedText(encryptedText);
 
       sendResponse({
-        status: "success",
-        message: "Text encrypted and ready to send!",
+        status: 'success',
+        message: 'Text encrypted and ready to send!',
       });
-
     } catch (err) {
       console.error(err);
-      sendResponse({ status: "error", message: "Failed to encrypt text." });
+      sendResponse({ status: 'error', message: 'Failed to encrypt text.' });
     }
   } else {
     alert('No text selected for encryption.');
@@ -263,7 +265,7 @@ function replaceSelectedText(replacementText) {
       newRange.selectNodeContents(textNode);
       selection.addRange(newRange);
 
-      const event = new Event("input", { bubbles: true });
+      const event = new Event('input', { bubbles: true });
       const editableElement = range.startContainer.parentNode.closest(
         '[contenteditable="true"], textarea, input'
       );
@@ -273,13 +275,13 @@ function replaceSelectedText(replacementText) {
 }
 
 async function getSessionPassphrase() {
-  const sessionPassphrase = sessionStorage.getItem("sessionPassphrase");
-  return sessionPassphrase || "[Decryption Failed - No Passphrase]";
+  const sessionPassphrase = sessionStorage.getItem('sessionPassphrase');
+  return sessionPassphrase || '[Decryption Failed - No Passphrase]';
 }
 
 // Set the passphrase in session storage
 async function setSessionPassphrase(passphrase) {
-  sessionStorage.setItem("sessionPassphrase", passphrase);
+  sessionStorage.setItem('sessionPassphrase', passphrase);
 }
 
 // Function to replace the text in the input with the encrypted version
@@ -371,6 +373,10 @@ function injectEncryptButton() {
     encryptButton.style.padding = '5px';
     encryptButton.style.color = 'aliceblue';
     encryptButton.style.border = 'none';
+    if(globalThis.getWebsite() === 'whatsapp'){
+      sendButton.parentElement.setAttribute("style", "display: flex; flex-wrap: owrap; flex-direction: row;justify-content: flex-end;")
+      encryptButton.style.marginRight = '33px';
+    }
     sendButton.parentNode.insertBefore(encryptButton, sendButton);
 
     // Add click event listener to the new button
@@ -388,19 +394,19 @@ observer.observe(document.body, { childList: true, subtree: true });
 
 // Listen for messages from the popup or background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "encryptText") {
+  if (request.action === 'encryptText') {
     encryptAndReplaceSelectedTextPGP(sendResponse);
-  } else if (request.action === "resetPassphrase") {
-    sessionStorage.removeItem("sessionPassphrase"); // Reset passphrase
-    sendResponse({ status: "success", message: "Passphrase reset" });
-  } else if (request.action === "setPassphrase") {
+  } else if (request.action === 'resetPassphrase') {
+    sessionStorage.removeItem('sessionPassphrase'); // Reset passphrase
+    sendResponse({ status: 'success', message: 'Passphrase reset' });
+  } else if (request.action === 'setPassphrase') {
     setSessionPassphrase(request.passphrase);
-    sendResponse({ status: "success", message: "Passphrase set" });
-  } else if (request.action === "checkPassphrase") {
-    const hasPassphrase = !!sessionStorage.getItem("sessionPassphrase");
+    sendResponse({ status: 'success', message: 'Passphrase set' });
+  } else if (request.action === 'checkPassphrase') {
+    const hasPassphrase = !!sessionStorage.getItem('sessionPassphrase');
     sendResponse({ hasPassphrase });
   } else {
-    sendResponse({ status: "unknown action" });
+    sendResponse({ status: 'unknown action' });
   }
   return true; // Required for asynchronous responses
 });
