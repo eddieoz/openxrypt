@@ -1,14 +1,5 @@
 
 
-
-// Retrieve the session passphrase securely
-async function getSessionPassphrase() {
-  if (!sessionPassphrase) {
-    return '[Decryption Failed - No Passphrase]';
-  }
-  return sessionPassphrase;
-}
-
 // Retrieve private key of the extension user from storage
 async function retrieveExtensionUserPrivateKey() {
   const extensionUserHandle = globalThis.getAction('sender');
@@ -326,6 +317,14 @@ async function handleEncryptAndSend() {
       const extensionUserHandle = globalThis.getAction('sender');
 
       try {
+        if(!userHandle){
+          alert('Failed to encrypt text. Was not possible to get receiver info.');
+          return null;
+        }
+        if(!extensionUserHandle){
+          alert('Failed to encrypt text. Was not possible to get your user info.');
+          return null;
+        }
         const recipientPublicKey = await retrieveUserPublicKey(userHandle);
         const extensionUserPublicKey = await retrieveUserPublicKeyFromPrivate(extensionUserHandle);
 
@@ -347,7 +346,7 @@ async function handleEncryptAndSend() {
 
         // Optionally, click the original send button
         // const sendButton = document.querySelector('[data-testid="dmComposerSendButton"]');
-        // if (sendButton) sendButton.click();
+        // if (sendButton) sendButton.click();      
       } catch (err) {
         console.error('Failed to encrypt text:', err);
         alert('Failed to encrypt text.');
