@@ -20,6 +20,18 @@ const siteActions = {
       type: 'decrypt', action: () => document.querySelectorAll('body, body *'),
     },
   ],
+  x: [
+    { type: 'sender', action: findUsernameFromInitialState },
+    { type: 'userid', action: findTwitterHandle },
+    { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
+    {
+      type: 'input', action: () =>
+        document.querySelector('[data-testid="dmComposerTextInput"]'),
+    },
+    {
+      type: 'decrypt', action: () => document.querySelectorAll('body, body *'),
+    },
+  ],
   whatsapp: [
     { type: 'sender', action: findWhatsappNumberSender },
     { type: 'userid', action: findWhatsappNumber },
