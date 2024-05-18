@@ -218,3 +218,13 @@ function findUsernameFromInitialState() {
   }
   return '@unknown_user';
 }
+
+// Helper function to check if a string is valid JSON
+function isJSON(str) {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
