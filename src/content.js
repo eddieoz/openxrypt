@@ -46,16 +46,35 @@ async function decryptPGPMessage(message) {
     //   }
     // }
 
-    // Decode from Base64 then decode URI components
-    const decodedData = JSON.parse(decryptedMessage.data)
+    // if not, just decrypt and show the text
+    // Check if decryptedMessage.data is a JSON string
+    
+    if (isJSON(decryptedMessage.data)) {
+      decodedData = JSON.parse(decryptedMessage.data);
+    } else {
+      decodedData = decryptedMessage.data;
+    }
 
-    const decodedText = decodeURIComponent(atob(decodedData.params.content.text).split('').map(c => {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-
-    return decodedText;
+    // If decodedData is an object, process it as a structured message
+    // decode from Base64 then decode URI components
+    if (typeof decodedData === 'object' && decodedData !== null) {
+      if (decodedData.event === 'xrypt.msg.new'){
+        const decodedText = decodeURIComponent(atob(decodedData.params.content.text).split('').map(c => {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return decodedText;
+      } else {
+        // Return the plain text if not a structured message
+        return '[Decryption Failed]';
+      }
+    } else {
+      // Return the plain text if not a structured message
+      return decodedData + ' 🔒\n[ std ]';
+    }
+      
+    
   } catch (error) {
-     // console.error("Error decrypting PGP message:", error);
+    console.error("Error decrypting PGP message:", error);
     return '[Decryption Failed]';
   }
 }
@@ -64,6 +83,8 @@ async function decryptPGPMessage(message) {
 async function autoDecryptAllXryptTexts() {
   const pgpBlockRegex =
     /-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----/gs;
+  const pgpBlockRegexXrypt =
+    /-----BEGIN PGP MESSAGE-----.*?\[ Encrypted with OpenXrypt \]/gs;
 
   const elements = globalThis.getAction('decrypt');
   if(elements){
@@ -75,7 +96,7 @@ async function autoDecryptAllXryptTexts() {
       (await getWebsite() === 'whatsapp'  && el.textContent.length > 60)
     ) {
       const textContent = el.textContent;
-      const matches = textContent.match(pgpBlockRegex);
+      const matches = textContent.match(pgpBlockRegexXrypt) || textContent.match(pgpBlockRegex);
 
       if (matches) {
         let newContent = textContent;
@@ -342,7 +363,7 @@ async function handleEncryptAndSend() {
         const encryptedText = await encryptTextPGP(JSON.stringify(xryptDocument), [recipientPublicKey, extensionUserPublicKey]);
 
         // Replace the selected text with the encrypted text
-        replaceSelectedText(encryptedText);
+        replaceSelectedText(encryptedText + '[ Encrypted with OpenXrypt ]\n');
 
         // Optionally, click the original send button
         // const sendButton = document.querySelector('[data-testid="dmComposerSendButton"]');
