@@ -3,10 +3,12 @@
 OpenXrypt is a Chrome extension that provides secure and encrypted communication on social media platforms. It utilizes the OpenPGP encryption standard to help protect the privacy of your communications and ensure the confidentiality of sensitive information.
 
 ## Compatible Platforms
- - Twitter DMs
- - Whatsapp Web
+
+- Twitter DMs
+- Whatsapp Web
 
 ## The Importance of Secure Communication
+
 Social media platforms have become integral parts of our daily lives, facilitating real-time communication, information sharing, and community building. However, the inherent nature of these platforms often raises concerns regarding user privacy and data security. Unencrypted messages and personal information are susceptible to unauthorized ads and access, potential surveillance and/or data breaches, posing significant risks to individuals and organizations.
 
 OpenXrypt recognizes the critical need for secure communication channels, particularly in an era where privacy violations and data mishandling have become increasingly prevalent. By offering robust encryption capabilities, OpenXrypt aims to empower users to engage in secure conversations, share sensitive information, and express themselves freely without the fear of unauthorized monitoring or interception.
@@ -15,6 +17,7 @@ OpenXrypt recognizes the critical need for secure communication channels, partic
 
 - **End-to-End Encryption:** Encrypts messages using OpenPGP to ensure only the sender and recipient can access the content.
 - **Automatic Encryption and Decryption:** OpenXrypt seamlessly integrates with the compatible platforms, automatically encrypting and decrypting messages using OpenPGP standards, ensuring that sensitive information remains protected during transmission and storage.
+- **Group Messages Encryption** You can encrypt messages on X and Whatsapp groups by just having all participants public keys registered.
 - **Passphrase Management:** Users can securely set, reset, and manage their passphrases, enabling them to maintain control over their encryption keys and ensure the confidentiality of their communications.
 - **Key Management:** OpenXrypt provides a user-friendly interface for adding, editing, and deleting GPG public and private keys, allowing users to manage their encryption keys and those of their contacts with ease.
 
@@ -30,7 +33,8 @@ OpenXrypt recognizes the critical need for secure communication channels, partic
 1. **Install Extension:** Add OpenXrypt to your Chrome browser.
 2. **Setup Keys:**
    - Add GPG (armored) public keys for your contacts.
-   - Add GPG (armored) your own private key for decryption (recommend ECC-25519 bc size&speed)
+   - Add GPG (armored) your own private key for decryption ** - recommend ECC-25519 bc size&speed**
+      - Tip for for beginners: to create your keys, use an app like Kleopatra on Linux & Windows or GPGTools on a Mac
 3. **Encrypt & Decrypt:**
    - **Encrypt:** Select text in a direct message and click the "Encrypt" button in the popup.
    - **Decrypt:** Encrypted messages will be automatically decrypted and replaced with readable text.
@@ -40,9 +44,9 @@ OpenXrypt recognizes the critical need for secure communication channels, partic
 #### Installation
 
 1. Clone the repository or download the ZIP:
-    ```bash
-    git clone https://github.com/eddieoz/openxrypt.git
-    ```
+   ```bash
+   git clone https://github.com/eddieoz/openxrypt.git
+   ```
 2. Open the Chrome Extensions page by navigating to `chrome://extensions/`.
 3. Enable "Developer mode" using the toggle switch.
 4. Click "Load unpacked" and select the cloned/downloaded `openxrypt` folder.
@@ -54,7 +58,7 @@ OpenXrypt recognizes the critical need for secure communication channels, partic
 - **Manage Private Keys:** Add, delete, and use your private key to decrypt messages.
 - **View Fingerprints:** Easily view the GPG fingerprint for each key.
 
-1. All keys are managed locally. 
+1. All keys are managed locally.
 2. It is recommended to create a new private key for messaging purposes.
 
 #### Public Key Management
@@ -75,13 +79,13 @@ OpenXrypt recognizes the critical need for secure communication channels, partic
 #### Encrypt Text
 
 1. Go and DM one of your contacts that you have already added a public key (from Messages left menu)
-![](imgs/opnxrpt-send.msg.png)
+   ![](imgs/opnxrpt-send.msg.png)
 2. Write a message
 3. Selected the entire messade (CTRL + A or CMD + A)
 4. Open the OpenXrypt popup by clicking the extension icon.
 5. Click the **Encrypt** button.
    - The selected text will be encrypted and replaced.
-7. Send the message on X.
+6. Send the message on X.
 
 #### Automatic Decryption
 
@@ -124,8 +128,8 @@ fPpU+z70EKFF+IXjY6nm9QY=
 - Push your feature branch and submit a PR.
 
 #### To-do
+
 - Encrypted public timeline posts ('maybe' use symmetric encryption with X handle, just to keep it fuzzy).
-- Encrypted group messages.
 - Extend the extension to cover more web messengers like Telegram web, and others.
 - Try newer algorithms like NaCL + Chacha20 to increase performance. Study the trade-offs.
 
@@ -156,7 +160,6 @@ This project is licensed under the MIT License.
 
    No, OpenXrypt stores encryption keys locally in your browser's storage.
 
-
 ### Contact
 
 For further queries, reach out via [GitHub Issues](https://github.com/eddieoz/openxrypt/issues).
@@ -164,9 +167,9 @@ For further queries, reach out via [GitHub Issues](https://github.com/eddieoz/op
 Feel free to ask for more questions or specific edits!
 
 ## Buy me a coffee
+
 Did you like it? [Buy me a coffee](https://www.buymeacoffee.com/eddieoz)
 
 [![Buy me a coffee](https://ipfs.io/ipfs/QmR6W4L3XiozMQc3EjfFeqSkcbu3cWnhZBn38z2W2FuTMZ?filename=buymeacoffee.webp)](https://www.buymeacoffee.com/eddieoz)
 
 Or drop me a tip through Lightning Network: ⚡ [zbd.gg/eddieoz](https://zbd.gg/eddieoz)
-
