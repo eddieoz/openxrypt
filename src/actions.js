@@ -11,6 +11,7 @@ const siteActions = {
   twitter: [
     { type: 'sender', action: findUsernameFromInitialState },
     { type: 'userid', action: findTwitterHandle },
+    { type: 'groupIds', action: getXGroupUserIds },
     { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
     {
       type: 'input', action: () =>
@@ -23,6 +24,7 @@ const siteActions = {
   x: [
     { type: 'sender', action: findUsernameFromInitialState },
     { type: 'userid', action: findTwitterHandle },
+    { type: 'groupIds', action: getXGroupUserIds },
     { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
     {
       type: 'input', action: () =>
@@ -35,6 +37,10 @@ const siteActions = {
   whatsapp: [
     { type: 'sender', action: findWhatsappNumberSender },
     { type: 'userid', action: findWhatsappNumber },
+    { type: 'groupIds', action: async () => {
+      const userIds = await getWhatsappGroupUserIds(await getWhatsappGroupId());
+      return userIds;
+    } },
     { type: 'senderButton', action: () =>{        
       const elements = Array.from(
         document.querySelectorAll('#main footer button[aria-label]'));
@@ -227,4 +233,112 @@ function isJSON(str) {
   } catch (e) {
     return false;
   }
+}
+
+// Checks if the current message is a group message 
+function isXGroupMessage() {
+  return document.querySelector('a[aria-label="Group info"]') !== null;
+}
+
+// Function to check if the current message is a WhatsApp group message
+function isWhatsappGroupMessage() {
+  // Find all elements with a data-id attribute
+  const elements = document.querySelectorAll('[data-id]');
+  
+  // Loop through the elements to check for the presence of @g.us
+  for (let element of elements) {
+    const dataId = element.getAttribute('data-id');
+    if (dataId && dataId.includes('@g.us')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Function to extract group ID from the Whatsapp group
+async function getWhatsappGroupId() {
+  // Find all elements with a data-id attribute
+  const elements = document.querySelectorAll('[data-id]');
+  
+  // Loop through the elements to find the first occurrence of @g.us
+  for (let element of elements) {
+      const dataId = element.getAttribute('data-id');
+      if (dataId && dataId.includes('@g.us')) {
+          // Extract the group ID using regex
+          const groupIdMatch = dataId.match(/_(.*?)@g\.us/);
+          if (groupIdMatch && groupIdMatch[1]) {
+              return groupIdMatch[1] + '@g.us';
+          }
+      }
+  }
+  return null;
+}
+
+// Get Whatsapp Group Participants from IndexDB
+async function getWhatsappGroupUserIds(groupId) {
+  return new Promise((resolve, reject) => {
+    // Open the IndexedDB without specifying a version
+    const request = indexedDB.open('model-storage');
+
+    request.onerror = (event) => {
+      console.error('Error opening IndexedDB:', event.target.error);
+      reject('Error opening IndexedDB: ' + event.target.error.message);
+    };
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      const transaction = db.transaction(['participant'], 'readonly');
+      const store = transaction.objectStore('participant');
+
+      // Get the group data by groupId
+      const getRequest = store.get(groupId);
+
+      getRequest.onerror = (event) => {
+        console.error('Error retrieving group data:', event.target.error);
+        reject('Error retrieving group data: ' + event.target.error.message);
+      };
+
+      getRequest.onsuccess = (event) => {
+        const groupData = event.target.result;
+        if (groupData && groupData.participants) {
+          // Remove the @c.us part from each participant's user ID
+          const cleanedParticipants = groupData.participants.map(participant => participant.replace('@c.us', ''));
+          resolve(cleanedParticipants);
+        } else {
+          reject('Group not found or no participants');
+        }
+      };
+    };
+
+    request.onupgradeneeded = (event) => {
+      console.error('Upgrade needed but not handled');
+      reject('Upgrade needed but not handled');
+    };
+  });
+}
+
+
+
+// This function is used to get the list of user IDs for a given group. 
+// It first finds the "Group info" button, and then clicks on it to open the group's information page.
+async function getXGroupUserIds() {
+  const groupInfoButton = document.querySelector('a[aria-label="Group info"]');
+  if (groupInfoButton) {
+    groupInfoButton.click();
+    // Wait for the user list to load (you might need to adjust the delay)
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const userElements = document.querySelectorAll('[data-testid="UserCell"] a[role="link"]');
+    
+    // Retrieve and format unique user IDs
+    const userIds = Array.from(new Set(Array.from(userElements).map(el => '@' + el.getAttribute('href').split('/').pop())));
+
+    // Click the back button
+    const backButton = document.querySelector('button[data-testid="app-bar-back"]');
+    if (backButton) {
+      backButton.click();
+    }
+
+    return userIds;
+  }
+  return [];
 }

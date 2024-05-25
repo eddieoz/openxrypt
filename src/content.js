@@ -118,7 +118,8 @@ function retrieveUserPublicKey(username) {
       const keys = result.keys;      
       if (keys[username]) {
         resolve(keys[username]);
-      } else {        
+      } else {       
+        alert(`Public key not found for ${username}`) 
         reject(`Public key not found for ${username}`);
       }
     });
@@ -134,6 +135,7 @@ async function retrieveUserPublicKeyFromPrivate(username) {
         const publicKey = await getPublicKeyFromPrivate(keys[username]);
         resolve(publicKey);
       } else {
+        alert(`Public key not found for ${username}`);
         reject(`Public key not found for ${username}`);
       }
     });
@@ -311,63 +313,68 @@ function replaceTextInInput(replacementText) {
 
 
 async function handleEncryptAndSend() {
-  
   let messageText = '';
   let messageInput = await globalThis.getAction('input');
-  // let messageInput = document.querySelector('[data-testid="dmComposerTextInput"]');
 
   if (messageInput) {
     if (messageInput.tagName === 'TEXTAREA') {
       messageText = messageInput.value;
     } else {
-      // Select the entire text in the input box
-      const range = document.createRange();
+      let range = document.createRange();
       range.selectNodeContents(messageInput);
-      const selection = window.getSelection();
+      let selection = window.getSelection();
       selection.removeAllRanges();
       selection.addRange(range);
-  
-      // Retrieve the text from the selection
       messageText = selection.toString().trim();
     }
 
-    // If not found, try the input for mobile
-    
     if (messageText) {
-      const userHandle = globalThis.getAction('userid');
       const extensionUserHandle = globalThis.getAction('sender');
+      let recipientHandles = [];
+      if (isXGroupMessage() || isWhatsappGroupMessage()) {
+        const userIds = await globalThis.getAction('groupIds');
+        for (const userId of userIds) {
+          recipientHandles.push(await retrieveUserPublicKey(userId));
+        }
+      } else {
+        const userHandle = globalThis.getAction('userid');
+        recipientHandles.push(await retrieveUserPublicKey(userHandle));
+      }
+      
+      if (!extensionUserHandle) {
+        alert('Failed to encrypt text. Was not possible to get your user info.');
+        return null;
+      }
+      
+      recipientHandles.push(await retrieveUserPublicKeyFromPrivate(extensionUserHandle));
+
+      const base64Text = btoa(encodeURIComponent(`${messageText} 🔒`).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+      const xryptDocument = {
+        "event": "xrypt.msg.new",
+        "params": {
+          "content": {
+            "type": "text",
+            "text": base64Text
+          }
+        }
+      }
 
       try {
-        if(!userHandle){
-          alert('Failed to encrypt text. Was not possible to get receiver info.');
-          return null;
-        }
-        if(!extensionUserHandle){
-          alert('Failed to encrypt text. Was not possible to get your user info.');
-          return null;
-        }
-        const recipientPublicKey = await retrieveUserPublicKey(userHandle);
-        const extensionUserPublicKey = await retrieveUserPublicKeyFromPrivate(extensionUserHandle);
 
-        const base64Text = btoa(encodeURIComponent(`${messageText} 🔒`).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
-        const xryptDocument = {
-          "event": "xrypt.msg.new",
-          "params": {
-            "content": {
-              "type": "text",
-              "text": base64Text
-            }
+        // if it is X Group, it needs to select the text again
+        if (isXGroupMessage()){
+          messageInput = await globalThis.getAction('input');
+          if (messageInput.tagName != 'TEXTAREA') {
+            range = document.createRange();
+            range.selectNodeContents(messageInput);
+            selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
           }
         }
 
-        const encryptedText = await encryptTextPGP(JSON.stringify(xryptDocument), [recipientPublicKey, extensionUserPublicKey]);
-
-        // Replace the selected text with the encrypted text
+        const encryptedText = await encryptTextPGP(JSON.stringify(xryptDocument), recipientHandles);
         replaceSelectedText(encryptedText + '[ Encrypted with OpenXrypt ]\n');
-
-        // Optionally, click the original send button
-        // const sendButton = document.querySelector('[data-testid="dmComposerSendButton"]');
-        // if (sendButton) sendButton.click();      
       } catch (err) {
         console.error('Failed to encrypt text:', err);
         alert('Failed to encrypt text.');
@@ -379,6 +386,7 @@ async function handleEncryptAndSend() {
     alert('Message input not found.');
   }
 }
+
 
 // Function to inject Encrypt button before the Send button
 function injectEncryptButton() {
