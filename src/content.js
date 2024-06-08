@@ -95,8 +95,9 @@ async function autoDecryptAllXryptTexts() {
       ) {
         const textContent = el.textContent;
         const pgpMatches = textContent.match(pgpBlockRegexXrypt) || textContent.match(pgpBlockRegex);
+        const aesPartialMatches = textContent.match(aesPartialBlockRegexXrypt);
         const aesMatches = textContent.match(aesBlockRegexXrypt);
-
+        
         let newContent = textContent;
         if (pgpMatches) {
           for (const match of pgpMatches) {
@@ -568,6 +569,13 @@ function injectEncryptButton() {
   }
 }
 
+// Call the function to inject the button
+injectEncryptButton();
+
+// Observe changes in the DOM to ensure the button is always injected
+const observerDM = new MutationObserver(injectEncryptButton);
+observerDM.observe(document.body, { childList: true, subtree: true });
+
 // Function to inject Encrypt button next to the Post button
 function injectEncryptButtonForTweet() {
   const postButtonInline = document.querySelector('button[data-testid="tweetButtonInline"]');
@@ -607,8 +615,8 @@ function monitorURLChanges() {
     }
   };
 
-  const observer = new MutationObserver(callback);
-  observer.observe(targetNode, config);
+  const observerPost = new MutationObserver(callback);
+  observerPost.observe(targetNode, config);
 }
 
 // Initialize monitoring for URL changes
@@ -618,8 +626,8 @@ monitorURLChanges();
 injectEncryptButtonForTweet();
 
 // Observe changes in the DOM to ensure the button is always injected
-const observer = new MutationObserver(injectEncryptButtonForTweet);
-observer.observe(document.body, { childList: true, subtree: true });
+const observerPost = new MutationObserver(injectEncryptButtonForTweet);
+observerPost.observe(document.body, { childList: true, subtree: true });
 
 // Listen for messages from the popup or background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -653,3 +661,4 @@ function initAutoDecryptionObserver() {
 
 // Start automatic decryption
 initAutoDecryptionObserver();
+
