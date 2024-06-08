@@ -6,6 +6,17 @@ function getWebsite() {
   }
   return names[0];
 }
+
+const commonTwitterActions = [
+  { type: 'sender', action: findUsernameFromInitialState },
+  { type: 'userid', action: findTwitterHandle },
+  { type: 'groupIds', action: getXGroupUserIds },
+  { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
+  { type: 'input', action: () => document.querySelector('[data-testid="dmComposerTextInput"]') },
+  { type: 'decrypt', action: () => document.querySelectorAll('body, body *') },
+  { type: 'postButton', action: () => document.querySelector('button[data-testid="tweetButton"]') },
+];
+
 // Site mapping for arrays of specific functions
 const siteActions = {
   twitter: commonTwitterActions,
@@ -39,17 +50,6 @@ const siteActions = {
     },
   ],
 };
-
-const commonTwitterActions = [
-  { type: 'sender', action: findUsernameFromInitialState },
-  { type: 'userid', action: findTwitterHandle },
-  { type: 'groupIds', action: getXGroupUserIds },
-  { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
-  { type: 'input', action: () => document.querySelector('[data-testid="dmComposerTextInput"]') },
-  { type: 'decrypt', action: () => document.querySelectorAll('body, body *') },
-  { type: 'postButton', action: () => document.querySelector('button[data-testid="tweetButton"]') },
-];
-
 
 function getAction(type) {
   const websiteName = getWebsite();
