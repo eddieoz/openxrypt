@@ -79,33 +79,58 @@ async function decryptPGPMessage(message) {
   }
 }
 
-// Automatically scan and decrypt all PGP encrypted texts on the page
+// Automatically scan and decrypt all AES-GCM and PGP encrypted texts on the page
 async function autoDecryptAllXryptTexts() {
-  const pgpBlockRegex =
-    /-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----/gs;
-  const pgpBlockRegexXrypt =
-    /-----BEGIN PGP MESSAGE-----.*?\[ Encrypted with OpenXrypt \]/gs;
+  const pgpBlockRegex = /-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----/gs;
+  const pgpBlockRegexXrypt = /-----BEGIN PGP MESSAGE-----.*?\[ Encrypted with OpenXrypt \]/gs;
+  const aesBlockRegexXrypt = /-----BEGIN AES-GCM MESSAGE-----.*?-----END AES-GCM MESSAGE-----/gs;
 
   const elements = globalThis.getAction('decrypt');
-  if(elements){
+  if (elements) {
+    for (const el of elements) {
+      if (
+        el.childNodes.length === 1 &&
+        el.childNodes[0].nodeType === Node.TEXT_NODE ||
+        (await getWebsite() === 'whatsapp' && el.textContent.length > 60)
+      ) {
+        const textContent = el.textContent;
+        const pgpMatches = textContent.match(pgpBlockRegexXrypt) || textContent.match(pgpBlockRegex);
+        const aesMatches = textContent.match(aesBlockRegexXrypt);
 
-  for (const el of elements) {
-    if (
-      el.childNodes.length === 1 &&
-      el.childNodes[0].nodeType === Node.TEXT_NODE ||
-      (await getWebsite() === 'whatsapp'  && el.textContent.length > 60)
-    ) {
-      const textContent = el.textContent;
-      const matches = textContent.match(pgpBlockRegexXrypt) || textContent.match(pgpBlockRegex);
-
-      if (matches) {
         let newContent = textContent;
-        for (const match of matches) {
-          const decryptedText = await decryptPGPMessage(match);
-          newContent = newContent.replace(match, decryptedText);
+        if (pgpMatches) {
+          for (const match of pgpMatches) {
+            const decryptedText = await decryptPGPMessage(match);
+            newContent = newContent.replace(match, decryptedText);
+          }
         }
+
+        if (aesMatches) {
+          // Check if the current URL is /home
+          if (window.location.pathname == "/notifications") {
+            return;
+          }
+          for (const match of aesMatches) {
+            const encryptedData = match.replace('-----BEGIN AES-GCM MESSAGE-----', '').replace('-----END AES-GCM MESSAGE-----', '').trim();
+            const tweetContainer = el.closest('article[role="article"]');
+            const userLink = tweetContainer.querySelector('a[href^="/"]');
+            const username = userLink ? userLink.getAttribute('href').substring(1) : null;
+
+            if (username) {
+              try {
+                const recipientPublicKey = await retrieveUserPublicKey(`@${username}`);
+                const fingerprint = await getGPGFingerprint(recipientPublicKey);
+                const decryptionKey = await generateEncryptionKey(fingerprint);
+                const decryptedText = await decryptSymmetric(encryptedData, decryptionKey);
+                newContent = newContent.replace(match, decryptedText);
+              } catch (err) {
+                console.error(`Failed to decrypt message for ${username}:`, err);
+              }
+            }
+          }
+        }
+
         el.textContent = newContent;
-        }
       }
     }
   }
@@ -387,6 +412,134 @@ async function handleEncryptAndSend() {
   }
 }
 
+// Function to handle encryption of tweet
+async function handleEncryptAndTweet() {
+  const tweetInput = document.querySelector('div[data-testid="tweetTextarea_0"]');
+  if (tweetInput) {
+    const tweetText = tweetInput.innerText.trim();
+    if (tweetText) {
+      const extensionUserHandle = await getAction('sender');
+      const recipientPublicKey = await retrieveUserPublicKey(extensionUserHandle);
+      
+      // Generate the encryption key from the fingerprint
+      const fingerprint = await getGPGFingerprint(recipientPublicKey);
+      const encryptionKey = await generateEncryptionKey(fingerprint);
+      
+      // Encrypt the message
+      const base64Text = btoa(encodeURIComponent(`${tweetText} 🔒`).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+
+      const xryptDocument = {
+        "event": "xrypt.msg.new",
+        "params": {
+          "content": {
+            "type": "text",
+            "text": base64Text
+          }
+        }
+      };
+
+      range = document.createRange();
+      range.selectNodeContents(tweetInput);
+      selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      const encryptedText = await encryptSymmetric(JSON.stringify(xryptDocument), encryptionKey);
+      console.log(encryptedText)
+      // Replace the text inside <span data-text="true">
+      replaceSelectedText('-----BEGIN AES-GCM MESSAGE-----\n' + encryptedText + '\n-----END AES-GCM MESSAGE-----\n[ Encrypted with OpenXrypt ]\n');
+      
+    } else {
+      alert('Tweet text cannot be empty.');
+    }
+  } else {
+    alert('Tweet input not found.');
+  }
+}
+
+
+// Generate encryption key from the fingerprint
+async function generateEncryptionKey(fingerprint) {
+  console.log("fingerprint", fingerprint)
+  const enc = new TextEncoder();
+  const keyData = enc.encode(fingerprint);
+  const hash = await crypto.subtle.digest('SHA-256', keyData);
+  return crypto.subtle.importKey(
+    'raw',
+    hash,
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+// Encrypt text using AES-GCM
+async function encryptSymmetric(text, key) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = new TextEncoder();
+  const encodedText = enc.encode(text);
+  
+  const ciphertext = await crypto.subtle.encrypt(
+    {
+      name: 'AES-GCM',
+      iv: iv
+    },
+    key,
+    encodedText
+  );
+  
+  return btoa(String.fromCharCode(...new Uint8Array(iv)) + String.fromCharCode(...new Uint8Array(ciphertext)));
+}
+
+// Decrypt text using AES-GCM
+async function decryptSymmetric(encryptedText, key) {
+  const rawData = atob(encryptedText);
+  const iv = new Uint8Array(rawData.slice(0, 12).split('').map(c => c.charCodeAt(0)));
+  const ciphertext = new Uint8Array(rawData.slice(12).split('').map(c => c.charCodeAt(0)));
+  
+  const decryptedText = await crypto.subtle.decrypt(
+    {
+      name: 'AES-GCM',
+      iv: iv
+    },
+    key,
+    ciphertext
+  );
+  
+  const dec = new TextDecoder();
+  decryptedMessage = dec.decode(decryptedText);
+  
+  console.log("decryptedMessage", decryptedMessage)
+  if (isJSON(decryptedMessage)) {
+    decodedData = JSON.parse(decryptedMessage);
+  } else {
+    decodedData = decryptedMessage;
+  }
+
+  // If decodedData is an object, process it as a structured message
+  // decode from Base64 then decode URI components
+  if (typeof decodedData === 'object' && decodedData !== null) {
+    if (decodedData.event === 'xrypt.msg.new'){
+      const decodedText = decodeURIComponent(atob(decodedData.params.content.text).split('').map(c => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return decodedText;
+    } else {
+      // Return the plain text if not a structured message
+      return '[Decryption Failed]';
+    }
+  } else {
+    // Return the plain text if not a structured message
+    return decodedData + ' 🔒\n[ std ]';
+  }
+}
+
+function replaceTweetText(replacementText) {
+  const tweetInput = document.querySelector('div[data-testid="tweetTextarea_0"]');
+  if (tweetInput) {
+    tweetInput.innerText = replacementText;
+  }
+}
 
 // Function to inject Encrypt button before the Send button
 function injectEncryptButton() {
@@ -415,13 +568,58 @@ function injectEncryptButton() {
   }
 }
 
+// Function to inject Encrypt button next to the Post button
+function injectEncryptButtonForTweet() {
+  const postButtonInline = document.querySelector('button[data-testid="tweetButtonInline"]');
+  const postButton = document.querySelector('button[data-testid="tweetButton"]');
+  if ((postButtonInline || postButton) && !document.querySelector('#encryptAndTweetButton')) {
+    const encryptButton = document.createElement('button');
+    encryptButton.id = 'encryptAndTweetButton';
+    encryptButton.innerText = 'Encrypt';
+    encryptButton.style.marginRight = '10px';
+    encryptButton.style.backgroundColor = '#1884cb';
+    encryptButton.style.borderRadius = '5px';
+    encryptButton.style.padding = '5px';
+    encryptButton.style.color = 'aliceblue';
+    encryptButton.style.border = 'none';
+    encryptButton.style.zIndex = '1000';
+    encryptButton.style.position = 'relative';
+
+    if (postButtonInline) {
+      postButtonInline.parentNode.insertBefore(encryptButton, postButtonInline);
+    } else if (postButton) {
+      postButton.parentNode.insertBefore(encryptButton, postButton);
+    }
+
+    encryptButton.addEventListener('click', handleEncryptAndTweet);
+  }
+}
+// Function to monitor URL changes and detect the tweet composition page
+function monitorURLChanges() {
+  const targetNode = document.body;
+  const config = { childList: true, subtree: true };
+
+  const callback = function (mutationsList) {
+    for (const mutation of mutationsList) {
+      if (window.location.href === "https://x.com/compose/post") {
+        injectEncryptButtonForTweet();
+      }
+    }
+  };
+
+  const observer = new MutationObserver(callback);
+  observer.observe(targetNode, config);
+}
+
+// Initialize monitoring for URL changes
+monitorURLChanges();
+
 // Call the function to inject the button
-injectEncryptButton();
+injectEncryptButtonForTweet();
 
 // Observe changes in the DOM to ensure the button is always injected
-const observer = new MutationObserver(injectEncryptButton);
+const observer = new MutationObserver(injectEncryptButtonForTweet);
 observer.observe(document.body, { childList: true, subtree: true });
-
 
 // Listen for messages from the popup or background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

@@ -20,6 +20,10 @@ const siteActions = {
     {
       type: 'decrypt', action: () => document.querySelectorAll('body, body *'),
     },
+    { 
+      type: 'postButton', action: () => document.querySelector('button[data-testid="tweetButton"]') 
+    },
+
   ],
   x: [
     { type: 'sender', action: findUsernameFromInitialState },
@@ -32,6 +36,9 @@ const siteActions = {
     },
     {
       type: 'decrypt', action: () => document.querySelectorAll('body, body *'),
+    },
+    { 
+      type: 'postButton', action: () => document.querySelector('button[data-testid="tweetButton"]') 
     },
   ],
   whatsapp: [
@@ -341,4 +348,15 @@ async function getXGroupUserIds() {
     return userIds;
   }
   return [];
+}
+
+// Check if it is the X composition page (mobile or desktop)
+function isTweetCompositionPage() {
+  const canonicalLink = document.querySelector('link[rel="canonical"][href="https://x.com/compose/post"]');
+  const alternateLink = document.querySelector('link[rel="alternate"][hreflang="x-default"][href="https://x.com/compose/post"]');
+  return canonicalLink || alternateLink;
+}
+
+if (isTweetCompositionPage()) {
+  injectEncryptButtonForTweet();
 }
