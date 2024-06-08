@@ -8,39 +8,8 @@ function getWebsite() {
 }
 // Site mapping for arrays of specific functions
 const siteActions = {
-  twitter: [
-    { type: 'sender', action: findUsernameFromInitialState },
-    { type: 'userid', action: findTwitterHandle },
-    { type: 'groupIds', action: getXGroupUserIds },
-    { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
-    {
-      type: 'input', action: () =>
-        document.querySelector('[data-testid="dmComposerTextInput"]'),
-    },
-    {
-      type: 'decrypt', action: () => document.querySelectorAll('body, body *'),
-    },
-    { 
-      type: 'postButton', action: () => document.querySelector('button[data-testid="tweetButton"]') 
-    },
-
-  ],
-  x: [
-    { type: 'sender', action: findUsernameFromInitialState },
-    { type: 'userid', action: findTwitterHandle },
-    { type: 'groupIds', action: getXGroupUserIds },
-    { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
-    {
-      type: 'input', action: () =>
-        document.querySelector('[data-testid="dmComposerTextInput"]'),
-    },
-    {
-      type: 'decrypt', action: () => document.querySelectorAll('body, body *'),
-    },
-    { 
-      type: 'postButton', action: () => document.querySelector('button[data-testid="tweetButton"]') 
-    },
-  ],
+  twitter: commonTwitterActions,
+  x: commonTwitterActions,
   whatsapp: [
     { type: 'sender', action: findWhatsappNumberSender },
     { type: 'userid', action: findWhatsappNumber },
@@ -70,6 +39,17 @@ const siteActions = {
     },
   ],
 };
+
+const commonTwitterActions = [
+  { type: 'sender', action: findUsernameFromInitialState },
+  { type: 'userid', action: findTwitterHandle },
+  { type: 'groupIds', action: getXGroupUserIds },
+  { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
+  { type: 'input', action: () => document.querySelector('[data-testid="dmComposerTextInput"]') },
+  { type: 'decrypt', action: () => document.querySelectorAll('body, body *') },
+  { type: 'postButton', action: () => document.querySelector('button[data-testid="tweetButton"]') },
+];
+
 
 function getAction(type) {
   const websiteName = getWebsite();
