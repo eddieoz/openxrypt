@@ -95,7 +95,6 @@ async function autoDecryptAllXryptTexts() {
       ) {
         const textContent = el.textContent;
         const pgpMatches = textContent.match(pgpBlockRegexXrypt) || textContent.match(pgpBlockRegex);
-        const aesPartialMatches = textContent.match(aesPartialBlockRegexXrypt);
         const aesMatches = textContent.match(aesBlockRegexXrypt);
         
         let newContent = textContent;
@@ -114,19 +113,26 @@ async function autoDecryptAllXryptTexts() {
           for (const match of aesMatches) {
             const encryptedData = match.replace('-----BEGIN AES-GCM MESSAGE-----', '').replace('-----END AES-GCM MESSAGE-----', '').trim();
             const tweetContainer = el.closest('article[role="article"]');
-            const userLink = tweetContainer.querySelector('a[href^="/"]');
+            const userLink = tweetContainer ? tweetContainer.querySelector('a[href^="/"]') : null;
             const username = userLink ? userLink.getAttribute('href').substring(1) : null;
 
-            if (username) {
-              try {
+            try {
+              let decryptionKey;
+              if (username) {
                 const recipientPublicKey = await retrieveUserPublicKey(`@${username}`);
                 const fingerprint = await getGPGFingerprint(recipientPublicKey);
-                const decryptionKey = await generateEncryptionKey(fingerprint);
-                const decryptedText = await decryptSymmetric(encryptedData, decryptionKey);
-                newContent = newContent.replace(match, decryptedText);
-              } catch (err) {
-                console.error(`Failed to decrypt message for ${username}:`, err);
+                decryptionKey = await generateEncryptionKey(fingerprint);
+              } else {
+                const privateKeyArmored = await retrieveExtensionUserPrivateKey();
+                const privateKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
+                const publicKey = privateKey.toPublic();
+                const fingerprint = publicKey.getFingerprint().match(/.{1,4}/g).join(' ');
+                decryptionKey = await generateEncryptionKey(fingerprint);
               }
+              const decryptedText = await decryptSymmetric(encryptedData, decryptionKey);
+              newContent = newContent.replace(match, decryptedText);
+            } catch (err) {
+              console.error(`Failed to decrypt message:`, err);
             }
           }
         }
@@ -430,7 +436,7 @@ async function handleEncryptAndTweet() {
       const base64Text = btoa(encodeURIComponent(`${tweetText} 🔒`).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
 
       const xryptDocument = {
-        "event": "xrypt.msg.new",
+        "event": "xrypt.post.new",
         "params": {
           "content": {
             "type": "text",
@@ -461,7 +467,6 @@ async function handleEncryptAndTweet() {
 
 // Generate encryption key from the fingerprint
 async function generateEncryptionKey(fingerprint) {
-  console.log("fingerprint", fingerprint)
   const enc = new TextEncoder();
   const keyData = enc.encode(fingerprint);
   const hash = await crypto.subtle.digest('SHA-256', keyData);
@@ -510,7 +515,6 @@ async function decryptSymmetric(encryptedText, key) {
   const dec = new TextDecoder();
   decryptedMessage = dec.decode(decryptedText);
   
-  console.log("decryptedMessage", decryptedMessage)
   if (isJSON(decryptedMessage)) {
     decodedData = JSON.parse(decryptedMessage);
   } else {
@@ -520,7 +524,7 @@ async function decryptSymmetric(encryptedText, key) {
   // If decodedData is an object, process it as a structured message
   // decode from Base64 then decode URI components
   if (typeof decodedData === 'object' && decodedData !== null) {
-    if (decodedData.event === 'xrypt.msg.new'){
+    if (decodedData.event === 'xrypt.post.new'){
       const decodedText = decodeURIComponent(atob(decodedData.params.content.text).split('').map(c => {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
@@ -532,13 +536,6 @@ async function decryptSymmetric(encryptedText, key) {
   } else {
     // Return the plain text if not a structured message
     return decodedData + ' 🔒\n[ std ]';
-  }
-}
-
-function replaceTweetText(replacementText) {
-  const tweetInput = document.querySelector('div[data-testid="tweetTextarea_0"]');
-  if (tweetInput) {
-    tweetInput.innerText = replacementText;
   }
 }
 
@@ -623,7 +620,7 @@ function monitorURLChanges() {
 monitorURLChanges();
 
 // Call the function to inject the button
-injectEncryptButtonForTweet();
+// injectEncryptButtonForTweet();
 
 // Observe changes in the DOM to ensure the button is always injected
 const observerPost = new MutationObserver(injectEncryptButtonForTweet);
