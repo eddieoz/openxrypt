@@ -580,7 +580,7 @@ function injectEncryptButtonForTweet() {
   if ((postButtonInline || postButton) && !document.querySelector('#encryptAndTweetButton')) {
     const encryptButton = document.createElement('button');
     encryptButton.id = 'encryptAndTweetButton';
-    encryptButton.innerText = 'Encrypt';
+    encryptButton.innerText = 'Obfuscate';
     encryptButton.style.marginRight = '10px';
     encryptButton.style.backgroundColor = '#1884cb';
     encryptButton.style.borderRadius = '5px';
