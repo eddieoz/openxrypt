@@ -20,6 +20,7 @@ OpenXrypt recognizes the critical need for secure communication channels, partic
 - **Group Messages Encryption** You can encrypt messages on X and Whatsapp groups by just having all participants public keys registered.
 - **Passphrase Management:** Users can securely set, reset, and manage their passphrases, enabling them to maintain control over their encryption keys and ensure the confidentiality of their communications.
 - **Key Management:** OpenXrypt provides a user-friendly interface for adding, editing, and deleting GPG public and private keys, allowing users to manage their encryption keys and those of their contacts with ease.
+- **Timeline Obfuscation**: OpenXrypt enhances your privacy by obfuscating your timeline, making it hard for algorithms to use your content for AI training or targeted advertising. Your posts will be symmetrically encrypted with a SHA-256 hash of your public key's fingerprint, ensuring your content remains public but more secure.
 
 ### Screenshots
 
@@ -78,14 +79,17 @@ OpenXrypt recognizes the critical need for secure communication channels, partic
 
 #### Encrypt Text
 
+##### DM:
 1. Go and DM one of your contacts that you have already added a public key (from Messages left menu)
    ![](imgs/opnxrpt-send.msg.png)
 2. Write a message
-3. Selected the entire messade (CTRL + A or CMD + A)
-4. Open the OpenXrypt popup by clicking the extension icon.
-5. Click the **Encrypt** button.
+3. Click the **Encrypt** button.
    - The selected text will be encrypted and replaced.
-6. Send the message on X.
+4. Send the message on X.
+
+##### Timeline
+1. Just write your post, click on **Encrypt** button.
+2. Send the message on X.
 
 #### Automatic Decryption
 
