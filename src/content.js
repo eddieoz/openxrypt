@@ -454,7 +454,7 @@ async function handleEncryptAndTweet() {
       const encryptedText = await encryptSymmetric(JSON.stringify(xryptDocument), encryptionKey);
       console.log(encryptedText)
       // Replace the text inside <span data-text="true">
-      replaceSelectedText('-----BEGIN AES-GCM MESSAGE-----\n' + encryptedText + '\n-----END AES-GCM MESSAGE-----\n[ Encrypted with OpenXrypt ]\n');
+      replaceSelectedText('-----BEGIN AES-GCM MESSAGE-----\n' + encryptedText + '\n-----END AES-GCM MESSAGE-----\n[ Obfuscated with OpenXrypt ]\n');
       
     } else {
       alert('Tweet text cannot be empty.');
