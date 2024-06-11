@@ -83,7 +83,7 @@ async function decryptPGPMessage(message) {
 async function autoDecryptAllXryptTexts() {
   const pgpBlockRegex = /-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----/gs;
   const pgpBlockRegexXrypt = /-----BEGIN PGP MESSAGE-----.*?\[ Encrypted with OpenXrypt \]/gs;
-  const aesBlockRegexXrypt = /-----BEGIN AES-GCM MESSAGE-----.*?-----END AES-GCM MESSAGE-----/gs;
+  const aesBlockRegexXrypt = /XRPT.*?XRPT/gs;
 
   const elements = globalThis.getAction('decrypt');
   if (elements) {
@@ -111,7 +111,7 @@ async function autoDecryptAllXryptTexts() {
             return;
           }
           for (const match of aesMatches) {
-            const encryptedData = match.replace('-----BEGIN AES-GCM MESSAGE-----', '').replace('-----END AES-GCM MESSAGE-----', '').trim();
+            const encryptedData = match.replace('XRPT', '').replace('XRPT', '').trim();
             const tweetContainer = el.closest('article[role="article"]');
             const userLink = tweetContainer ? tweetContainer.querySelector('a[href^="/"]') : null;
             const username = userLink ? userLink.getAttribute('href').substring(1) : null;
@@ -431,19 +431,6 @@ async function handleEncryptAndTweet() {
       // Generate the encryption key from the fingerprint
       const fingerprint = await getGPGFingerprint(recipientPublicKey);
       const encryptionKey = await generateEncryptionKey(fingerprint);
-      
-      // Encrypt the message
-      const base64Text = btoa(encodeURIComponent(`${tweetText} 🔒`).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
-
-      const xryptDocument = {
-        "event": "xrypt.post.new",
-        "params": {
-          "content": {
-            "type": "text",
-            "text": base64Text
-          }
-        }
-      };
 
       range = document.createRange();
       range.selectNodeContents(tweetInput);
@@ -451,10 +438,9 @@ async function handleEncryptAndTweet() {
       selection.removeAllRanges();
       selection.addRange(range);
 
-      const encryptedText = await encryptSymmetric(JSON.stringify(xryptDocument), encryptionKey);
-      console.log(encryptedText)
+      const encryptedText = await encryptSymmetric(`${tweetText} 🔒`, encryptionKey);
       // Replace the text inside <span data-text="true">
-      replaceSelectedText('-----BEGIN AES-GCM MESSAGE-----\n' + encryptedText + '\n-----END AES-GCM MESSAGE-----\n[ Obfuscated with OpenXrypt ]\n');
+      replaceSelectedText('XRPT\n' + encryptedText + '\nXRPT\n');
       
     } else {
       alert('Tweet text cannot be empty.');
@@ -481,9 +467,10 @@ async function generateEncryptionKey(fingerprint) {
 
 // Encrypt text using AES-GCM
 async function encryptSymmetric(text, key) {
+  const paddedText = padText(text)
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const enc = new TextEncoder();
-  const encodedText = enc.encode(text);
+  const encodedText = enc.encode(paddedText);
   
   const ciphertext = await crypto.subtle.encrypt(
     {
@@ -514,29 +501,27 @@ async function decryptSymmetric(encryptedText, key) {
   
   const dec = new TextDecoder();
   decryptedMessage = dec.decode(decryptedText);
+  return removePadding(decryptedMessage);
   
-  if (isJSON(decryptedMessage)) {
-    decodedData = JSON.parse(decryptedMessage);
-  } else {
-    decodedData = decryptedMessage;
-  }
+}
 
-  // If decodedData is an object, process it as a structured message
-  // decode from Base64 then decode URI components
-  if (typeof decodedData === 'object' && decodedData !== null) {
-    if (decodedData.event === 'xrypt.post.new'){
-      const decodedText = decodeURIComponent(atob(decodedData.params.content.text).split('').map(c => {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      return decodedText;
-    } else {
-      // Return the plain text if not a structured message
-      return '[Decryption Failed]';
-    }
+// Padding character
+const PAD_CHAR = ' ';
+
+// Function to pad the text to 270 characters (considering markers)
+function padText(text) {
+  if (text.length < 270){
+    const paddingNeeded = 270 - text.length;
+    return text + PAD_CHAR.repeat(paddingNeeded);
   } else {
-    // Return the plain text if not a structured message
-    return decodedData + ' 🔒\n[ std ]';
+    return text
   }
+  
+}
+
+// Function to remove the padding characters
+function removePadding(text) {
+  return text.replace(new RegExp(PAD_CHAR + '+$'), '');
 }
 
 // Function to inject Encrypt button before the Send button
