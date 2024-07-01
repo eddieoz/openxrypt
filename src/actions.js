@@ -6,34 +6,21 @@ function getWebsite() {
   }
   return names[0];
 }
+
+const commonTwitterActions = [
+  { type: 'sender', action: findUsernameFromInitialState },
+  { type: 'userid', action: findTwitterHandle },
+  { type: 'groupIds', action: getXGroupUserIds },
+  { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
+  { type: 'input', action: () => document.querySelector('[data-testid="dmComposerTextInput"]') },
+  { type: 'decrypt', action: () => document.querySelectorAll('body, body *') },
+  { type: 'postButton', action: () => document.querySelector('button[data-testid="tweetButton"]') },
+];
+
 // Site mapping for arrays of specific functions
 const siteActions = {
-  twitter: [
-    { type: 'sender', action: findUsernameFromInitialState },
-    { type: 'userid', action: findTwitterHandle },
-    { type: 'groupIds', action: getXGroupUserIds },
-    { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
-    {
-      type: 'input', action: () =>
-        document.querySelector('[data-testid="dmComposerTextInput"]'),
-    },
-    {
-      type: 'decrypt', action: () => document.querySelectorAll('body, body *'),
-    },
-  ],
-  x: [
-    { type: 'sender', action: findUsernameFromInitialState },
-    { type: 'userid', action: findTwitterHandle },
-    { type: 'groupIds', action: getXGroupUserIds },
-    { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
-    {
-      type: 'input', action: () =>
-        document.querySelector('[data-testid="dmComposerTextInput"]'),
-    },
-    {
-      type: 'decrypt', action: () => document.querySelectorAll('body, body *'),
-    },
-  ],
+  twitter: commonTwitterActions,
+  x: commonTwitterActions,
   whatsapp: [
     { type: 'sender', action: findWhatsappNumberSender },
     { type: 'userid', action: findWhatsappNumber },
@@ -341,4 +328,15 @@ async function getXGroupUserIds() {
     return userIds;
   }
   return [];
+}
+
+// Check if it is the X composition page (mobile or desktop)
+function isTweetCompositionPage() {
+  const canonicalLink = document.querySelector('link[rel="canonical"][href="https://x.com/compose/post"]');
+  const alternateLink = document.querySelector('link[rel="alternate"][hreflang="x-default"][href="https://x.com/compose/post"]');
+  return canonicalLink || alternateLink;
+}
+
+if (isTweetCompositionPage()) {
+  injectEncryptButtonForTweet();
 }
