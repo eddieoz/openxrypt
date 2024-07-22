@@ -49,6 +49,18 @@ const siteActions = {
       },
     },
   ],
+  telegram: [
+    { type: 'sender', action: findTelegramHandle },
+    { type: 'userid', action: findTelegramUsername },
+    { type: 'senderButton', action: () => document.querySelector('.Button.send.main-button.default.secondary.round.click-allowed') },
+    { type: 'input', action: () => document.querySelector('#editable-message-text') },
+    { type: 'decrypt', action: () => {
+      const mainEl = document.querySelector('.messages-container')
+      if (mainEl) {
+        return mainEl.querySelectorAll('div.text-content.clearfix.with-meta')
+      }
+    }},
+  ]
 };
 
 function getAction(type) {
@@ -339,4 +351,34 @@ function isTweetCompositionPage() {
 
 if (isTweetCompositionPage()) {
   injectEncryptButtonForTweet();
+}
+
+function findTelegramUsername() {
+  const profileContainer = document.querySelector(".profile-info");
+  if (profileContainer) {
+    const multilineItems = profileContainer.querySelectorAll(".multiline-item");
+    for (const item of multilineItems) {
+      const titleElement = item.querySelector(".title");
+      if (titleElement) {
+        const textContent = titleElement.textContent.trim();
+        if (/^\+\d+/.test(textContent)) {
+          continue;
+        }
+        const usernameMatch = textContent.match(/@([a-zA-Z0-9_]+)/);
+        if (usernameMatch) {
+          return usernameMatch[0];
+        }
+      }
+    }
+  }
+  return "@unknown_user";
+}
+
+function findTelegramHandle() {
+  const tt = JSON.parse(localStorage.getItem('tt-global-state'))
+  const value = tt.users.byId[tt.currentUserId];
+  if (value.usernames[0].username.length > 1) {
+    return '@' + value.usernames[0].username
+  }
+  return "@unknown_user";
 }
