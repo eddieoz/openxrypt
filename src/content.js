@@ -19,65 +19,128 @@ async function retrieveExtensionUserPrivateKey() {
 async function decryptPGPMessage(message) {
   try {
     const privateKeyArmored = await retrieveExtensionUserPrivateKey();
-    const passphrase = await getSessionPassphrase();
-    if (!passphrase || passphrase === '[Decryption Failed - No Passphrase]')
-      return passphrase;
+    console.log("Retrieved private key:", privateKeyArmored);
 
-    const privateKey = await openpgp.decryptKey({
-      privateKey: await openpgp.readPrivateKey({
-        armoredKey: privateKeyArmored,
-      }),
-      passphrase: passphrase,
-    });
+    const passphrase = await getSessionPassphrase();
+    console.log("Using passphrase:", passphrase);
+
+    if (!passphrase || passphrase === '[Decryption Failed - No Passphrase]') {
+      console.error("No passphrase provided or decryption failed due to passphrase issue.");
+      return passphrase;
+    }
+
+    let privateKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
+    if (!privateKey.isDecrypted()) {
+      privateKey = await openpgp.decryptKey({
+        privateKey: privateKey,
+        passphrase: passphrase,
+      });
+      console.log("Decrypted private key:", privateKey);
+    } else {
+      console.log("Private key is already decrypted.");
+    }
 
     const decryptedMessage = await openpgp.decrypt({
       message: await openpgp.readMessage({ armoredMessage: message }),
       decryptionKeys: [privateKey],
     });
+    console.log("Decrypted message data:", decryptedMessage.data);
 
-    // Consider the msg document format
-    // {
-    //   "event": "xrypt.[msg_type].[event_type]",
-    //   "params": {
-    //     "content": {
-    //       "type": "text",
-    //       "text": base64("hello!")
-    //     }
-    //   }
-    // }
-
-    // if not, just decrypt and show the text
-    // Check if decryptedMessage.data is a JSON string
-    
+    let decodedData;
     if (isJSON(decryptedMessage.data)) {
       decodedData = JSON.parse(decryptedMessage.data);
+      console.log("Decoded JSON data:", decodedData);
     } else {
       decodedData = decryptedMessage.data;
+      console.log("Decoded text data:", decodedData);
     }
 
-    // If decodedData is an object, process it as a structured message
-    // decode from Base64 then decode URI components
     if (typeof decodedData === 'object' && decodedData !== null) {
-      if (decodedData.event === 'xrypt.msg.new'){
-        const decodedText = decodeURIComponent(atob(decodedData.params.content.text).split('').map(c => {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+      if (decodedData.event === 'xrypt.msg.new') {
+        const base64Text = decodedData.params.content.text;
+        const decodedText = decodeURIComponent(
+          atob(base64Text)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        console.log("Decoded structured message text:", decodedText);
         return decodedText;
       } else {
-        // Return the plain text if not a structured message
+        console.error("Decryption failed: not a structured message.");
         return '[Decryption Failed]';
       }
     } else {
-      // Return the plain text if not a structured message
+      console.log("Decoded plain text message:", decodedData + ' 🔒\n[ std ]');
       return decodedData + ' 🔒\n[ std ]';
     }
-      
-    
   } catch (error) {
     console.error("Error decrypting PGP message:", error);
     return '[Decryption Failed]';
   }
 }
+// async function decryptPGPMessage(message) {
+//   try {
+//     const privateKeyArmored = await retrieveExtensionUserPrivateKey();
+//     const passphrase = await getSessionPassphrase();
+//     if (!passphrase || passphrase === '[Decryption Failed - No Passphrase]')
+//       return passphrase;
+
+//     const privateKey = await openpgp.decryptKey({
+//       privateKey: await openpgp.readPrivateKey({
+//         armoredKey: privateKeyArmored,
+//       }),
+//       passphrase: passphrase,
+//     });
+
+//     const decryptedMessage = await openpgp.decrypt({
+//       message: await openpgp.readMessage({ armoredMessage: message }),
+//       decryptionKeys: [privateKey],
+//     });
+
+//     // Consider the msg document format
+//     // {
+//     //   "event": "xrypt.[msg_type].[event_type]",
+//     //   "params": {
+//     //     "content": {
+//     //       "type": "text",
+//     //       "text": base64("hello!")
+//     //     }
+//     //   }
+//     // }
+
+//     // if not, just decrypt and show the text
+//     // Check if decryptedMessage.data is a JSON string
+    
+//     if (isJSON(decryptedMessage.data)) {
+//       decodedData = JSON.parse(decryptedMessage.data);
+//     } else {
+//       decodedData = decryptedMessage.data;
+//     }
+
+//     // If decodedData is an object, process it as a structured message
+//     // decode from Base64 then decode URI components
+//     if (typeof decodedData === 'object' && decodedData !== null) {
+//       if (decodedData.event === 'xrypt.msg.new'){
+//         const decodedText = decodeURIComponent(atob(decodedData.params.content.text).split('').map(c => {
+//           return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+//         }).join(''));
+//         return decodedText;
+//       } else {
+//         // Return the plain text if not a structured message
+//         return '[Decryption Failed]';
+//       }
+//     } else {
+//       // Return the plain text if not a structured message
+//       return decodedData + ' 🔒\n[ std ]';
+//     }
+      
+    
+//   } catch (error) {
+//     console.error("Error decrypting PGP message:", error);
+//     return '[Decryption Failed]';
+//   }
+// }
 
 // Automatically scan and decrypt all AES-GCM and PGP encrypted texts on the page
 async function autoDecryptAllXryptTexts() {
@@ -89,59 +152,88 @@ async function autoDecryptAllXryptTexts() {
   if (elements) {
     for (const el of elements) {
       if (
-        el.childNodes.length === 1 &&
-        el.childNodes[0].nodeType === Node.TEXT_NODE ||
-        (await getWebsite() === 'whatsapp' && el.textContent.length > 60)
+        (el.childNodes.length === 1 &&
+          el.childNodes[0].nodeType === Node.TEXT_NODE) ||
+        ((await getWebsite()) === "whatsapp" && el.textContent.length > 60)
       ) {
         const textContent = el.textContent;
-        const pgpMatches = textContent.match(pgpBlockRegexXrypt) || textContent.match(pgpBlockRegex);
-        const aesMatches = textContent.match(aesBlockRegexXrypt);
-        
-        let newContent = textContent;
-        if (pgpMatches) {
-          for (const match of pgpMatches) {
+        const matches =
+          textContent.match(pgpBlockRegexXrypt) ||
+          textContent.match(pgpBlockRegex);
+
+        if (matches) {
+          let newContent = textContent;
+          for (const match of matches) {
             const decryptedText = await decryptPGPMessage(match);
             newContent = newContent.replace(match, decryptedText);
           }
+          el.textContent = newContent;
         }
-
-        if (aesMatches) {
-          // Check if the current URL is /home
-          if (window.location.pathname == "/notifications") {
-            return;
-          }
-          for (const match of aesMatches) {
-            const encryptedData = match.replace('XRPT', '').replace('XRPT', '').trim();
-            const tweetContainer = el.closest('article[role="article"]');
-            const userLink = tweetContainer ? tweetContainer.querySelector('a[href^="/"]') : null;
-            const username = userLink ? userLink.getAttribute('href').substring(1) : null;
-
-            try {
-              let decryptionKey;
-              if (username) {
-                const recipientPublicKey = await retrieveUserPublicKey(`@${username}`);
-                const fingerprint = await getGPGFingerprint(recipientPublicKey);
-                decryptionKey = await generateEncryptionKey(fingerprint);
-              } else {
-                const privateKeyArmored = await retrieveExtensionUserPrivateKey();
-                const privateKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
-                const publicKey = privateKey.toPublic();
-                const fingerprint = publicKey.getFingerprint().match(/.{1,4}/g).join(' ');
-                decryptionKey = await generateEncryptionKey(fingerprint);
-              }
-              const decryptedText = await decryptSymmetric(encryptedData, decryptionKey);
-              newContent = newContent.replace(match, decryptedText);
-            } catch (err) {
-              console.error(`Failed to decrypt message:`, err);
-            }
-          }
-        }
-
-        el.textContent = newContent;
       }
     }
   }
 }
+// async function autoDecryptAllXryptTexts() {
+//   const pgpBlockRegex = /-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----/gs;
+//   const pgpBlockRegexXrypt = /-----BEGIN PGP MESSAGE-----.*?\[ Encrypted with OpenXrypt \]/gs;
+//   const aesBlockRegexXrypt = /XRPT.*?XRPT/gs;
+
+//   const elements = globalThis.getAction('decrypt');
+//   if (elements) {
+//     for (const el of elements) {
+//       if (
+//         (el.childNodes.length === 1 && el.childNodes[0].nodeType === Node.TEXT_NODE) ||
+//         (((await getWebsite()) === 'whatsapp' || await getWebsite() === 'telegram') && el.textContent.length > 60)
+//       ) {
+//         const textContent = el.innerText;
+//         const pgpMatches = textContent.match(pgpBlockRegexXrypt) || textContent.match(pgpBlockRegex);
+//         const aesMatches = textContent.match(aesBlockRegexXrypt);
+        
+//         let newContent = textContent;
+//         if (pgpMatches) {
+//           for (const match of pgpMatches) {
+//             const decryptedText = await decryptPGPMessage(match);
+//             newContent = newContent.replace(match, decryptedText);
+//           }
+//         }
+
+//         if (aesMatches) {
+//           // Check if the current URL is /home
+//           if (window.location.pathname == "/notifications") {
+//             return;
+//           }
+//           for (const match of aesMatches) {
+//             const encryptedData = match.replace('XRPT', '').replace('XRPT', '').trim();
+//             const tweetContainer = el.closest('article[role="article"]');
+//             const userLink = tweetContainer ? tweetContainer.querySelector('a[href^="/"]') : null;
+//             const username = userLink ? userLink.getAttribute('href').substring(1) : null;
+
+//             try {
+//               let decryptionKey;
+//               if (username) {
+//                 const recipientPublicKey = await retrieveUserPublicKey(`@${username}`);
+//                 const fingerprint = await getGPGFingerprint(recipientPublicKey);
+//                 decryptionKey = await generateEncryptionKey(fingerprint);
+//               } else {
+//                 const privateKeyArmored = await retrieveExtensionUserPrivateKey();
+//                 const privateKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
+//                 const publicKey = privateKey.toPublic();
+//                 const fingerprint = publicKey.getFingerprint().match(/.{1,4}/g).join(' ');
+//                 decryptionKey = await generateEncryptionKey(fingerprint);
+//               }
+//               const decryptedText = await decryptSymmetric(encryptedData, decryptionKey);
+//               newContent = newContent.replace(match, decryptedText);
+//             } catch (err) {
+//               console.error(`Failed to decrypt message:`, err);
+//             }
+//           }
+//         }
+
+//         el.textContent = newContent;
+//       }
+//     }
+//   }
+// }
 
 // Retrieve public key of a user from storage
 function retrieveUserPublicKey(username) {
