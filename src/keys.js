@@ -1,4 +1,36 @@
-// Add Public Key event listener
+// FIX: helper that safely sets text on a newly created element
+function createTextCell(text) {
+  const td = document.createElement('td');
+  td.textContent = text;
+  return td;
+}
+
+// FIX: build table rows with DOM API instead of innerHTML
+function createKeyRow(handle, fingerprint, showBtnClass, deleteBtnClass) {
+  const row = document.createElement('tr');
+
+  row.appendChild(createTextCell(handle));
+  row.appendChild(createTextCell(fingerprint || 'Invalid Key'));
+
+  const actionCell = document.createElement('td');
+
+  const showBtn = document.createElement('button');
+  showBtn.className = showBtnClass;
+  showBtn.textContent = showBtnClass === 'show-btn-pubkey' ? 'Show Key' : 'Show Pub Key';
+  showBtn.dataset.handle = handle;
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = deleteBtnClass;
+  deleteBtn.textContent = 'Delete';
+  deleteBtn.dataset.handle = handle;
+
+  actionCell.appendChild(showBtn);
+  actionCell.appendChild(deleteBtn);
+  row.appendChild(actionCell);
+
+  return row;
+}
+
 document.getElementById("addKey").addEventListener("click", async () => {
   const twitterHandle = document.getElementById("twitterHandle").value.trim();
   const publicKey = document.getElementById("publicKey").value.trim();
@@ -23,7 +55,6 @@ document.getElementById("addKey").addEventListener("click", async () => {
   }
 });
 
-// Add Private Key event listener
 document.getElementById("addPrivateKey").addEventListener("click", async () => {
   const ownerHandle = document.getElementById("ownerHandle").value.trim();
   const privateKey = document.getElementById("privateKey").value.trim();
@@ -49,7 +80,6 @@ document.getElementById("addPrivateKey").addEventListener("click", async () => {
   }
 });
 
-// Retrieve public key from private key
 async function getPublicKeyFromPrivate(privateKey) {
   try {
     const key = await openpgp.readKey({ armoredKey: privateKey });
@@ -60,7 +90,6 @@ async function getPublicKeyFromPrivate(privateKey) {
   }
 }
 
-// Generate GPG fingerprint from a public key
 async function getGPGFingerprint(publicKey) {
   try {
     const key = await openpgp.readKey({ armoredKey: publicKey });
@@ -74,7 +103,6 @@ async function getGPGFingerprint(publicKey) {
   }
 }
 
-// Load and display all public keys
 function loadKeys() {
   chrome.storage.local.get({ keys: {} }, async (result) => {
     const keysTableBody = document.querySelector("#keysTable tbody");
@@ -82,15 +110,8 @@ function loadKeys() {
     const keys = result.keys;
     for (const twitterHandle in keys) {
       const fingerprint = await getGPGFingerprint(keys[twitterHandle]);
-      const row = document.createElement("tr");
-      row.innerHTML = `
-                <td>${twitterHandle}</td>
-                <td>${fingerprint || "Invalid Key"}</td>
-                <td>
-                    <button class="show-btn-pubkey" data-handle="${twitterHandle}">Show Key</button>
-                    <button class="delete-pub-btn" data-handle="${twitterHandle}">Delete</button>
-                </td>
-            `;
+      // FIX (innerHTML XSS): use safe DOM-based row builder
+      const row = createKeyRow(twitterHandle, fingerprint, 'show-btn-pubkey', 'delete-pub-btn');
       keysTableBody.appendChild(row);
     }
 
@@ -119,7 +140,6 @@ function loadKeys() {
   });
 }
 
-// Load and display all private keys
 function loadPrivateKeys() {
   const privateKeysTableBody = document.querySelector(
     "#privateKeysTable tbody"
@@ -132,15 +152,8 @@ function loadPrivateKeys() {
         private_keys[ownerHandle]
       );
       const fingerprint = await getGPGFingerprint(publicKey);
-      const row = document.createElement("tr");
-      row.innerHTML = `
-                <td>${ownerHandle}</td>
-                <td>${fingerprint || "Invalid Key"}</td>
-                <td>
-                    <button class="show-btn-privkey" data-handle="${ownerHandle}">Show Pub Key</button>
-                    <button class="delete-priv-btn" data-handle="${ownerHandle}">Delete</button>
-                </td>
-            `;
+      // FIX (innerHTML XSS): use safe DOM-based row builder
+      const row = createKeyRow(ownerHandle, fingerprint, 'show-btn-privkey', 'delete-priv-btn');
       privateKeysTableBody.appendChild(row);
     }
 
