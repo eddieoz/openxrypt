@@ -11,10 +11,20 @@ const commonTwitterActions = [
   { type: 'sender', action: findUsernameFromInitialState },
   { type: 'userid', action: findTwitterHandle },
   { type: 'groupIds', action: getXGroupUserIds },
-  { type: 'senderButton', action: ()=> document.querySelector('[data-testid="dmComposerSendButton"]') },
-  { type: 'input', action: () => document.querySelector('[data-testid="dmComposerTextInput"]') },
+  {
+    type: 'senderButton',
+    action: () =>
+      document.querySelector('[data-testid="dmComposerSendButton"]'),
+  },
+  {
+    type: 'input',
+    action: () => document.querySelector('[data-testid="dmComposerTextInput"]'),
+  },
   { type: 'decrypt', action: () => document.querySelectorAll('body, body *') },
-  { type: 'postButton', action: () => document.querySelector('button[data-testid="tweetButton"]') },
+  {
+    type: 'postButton',
+    action: () => document.querySelector('button[data-testid="tweetButton"]'),
+  },
 ];
 
 // Site mapping for arrays of specific functions
@@ -24,28 +34,46 @@ const siteActions = {
   whatsapp: [
     { type: 'sender', action: findWhatsappNumberSender },
     { type: 'userid', action: findWhatsappNumber },
-    { type: 'groupIds', action: async () => {
-      const userIds = await getWhatsappGroupUserIds(await getWhatsappGroupId());
-      return userIds;
-    } },
-    { type: 'senderButton', action: () =>{        
-      const elements = Array.from(
-        document.querySelectorAll('#main footer button[aria-label]'));
+    {
+      type: 'groupIds',
+      action: async () => {
+        const userIds = await getWhatsappGroupUserIds(
+          await getWhatsappGroupId()
+        );
+        return userIds;
+      },
+    },
+    {
+      type: 'senderButton',
+      action: () => {
+        const elements = Array.from(
+          document.querySelectorAll('#main footer button[aria-label]')
+        );
         const lastElement = elements[elements.length - 1];
         return lastElement;
-    } },
+      },
+    },
     {
-      type: 'input', action: () => {
+      type: 'input',
+      action: () => {
         const mainEl = document.querySelector('#main');
         return mainEl.querySelector('div[contenteditable="true"]');
       },
     },
     {
-      type: 'decrypt', action: () => {
+      type: 'decrypt',
+      action: () => {
         const mainEl = document.querySelector('#main');
-        if(mainEl)
-            return mainEl.querySelectorAll('div[data-id^="false_"] span[dir="ltr"] span, div[data-id^="true_"] span[dir="ltr"] span');
-        return null
+        if (mainEl)
+          mainEl
+            .querySelectorAll(
+              'div[data-id^="false_"] span[dir="ltr"] span, div[data-id^="true_"] div[role="button"].read-more-button'
+            ) // clica no botão de read more automaticamente se ele existir
+            .forEach((bt) => bt.click());
+        return mainEl.querySelectorAll(
+          'div[data-id^="false_"] span[dir="ltr"] span, div[data-id^="true_"] span[dir="ltr"]'
+        );
+        return null;
       },
     },
   ],
@@ -69,7 +97,6 @@ function getAction(type) {
     return null;
   }
 }
-
 
 // WhatsApp functions
 function findWhatsappNumberSender() {
@@ -222,7 +249,7 @@ function isJSON(str) {
   }
 }
 
-// Checks if the current message is a group message 
+// Checks if the current message is a group message
 function isXGroupMessage() {
   return document.querySelector('a[aria-label="Group info"]') !== null;
 }
@@ -231,7 +258,7 @@ function isXGroupMessage() {
 function isWhatsappGroupMessage() {
   // Find all elements with a data-id attribute
   const elements = document.querySelectorAll('[data-id]');
-  
+
   // Loop through the elements to check for the presence of @g.us
   for (let element of elements) {
     const dataId = element.getAttribute('data-id');
@@ -246,17 +273,17 @@ function isWhatsappGroupMessage() {
 async function getWhatsappGroupId() {
   // Find all elements with a data-id attribute
   const elements = document.querySelectorAll('[data-id]');
-  
+
   // Loop through the elements to find the first occurrence of @g.us
   for (let element of elements) {
-      const dataId = element.getAttribute('data-id');
-      if (dataId && dataId.includes('@g.us')) {
-          // Extract the group ID using regex
-          const groupIdMatch = dataId.match(/_(.*?)@g\.us/);
-          if (groupIdMatch && groupIdMatch[1]) {
-              return groupIdMatch[1] + '@g.us';
-          }
+    const dataId = element.getAttribute('data-id');
+    if (dataId && dataId.includes('@g.us')) {
+      // Extract the group ID using regex
+      const groupIdMatch = dataId.match(/_(.*?)@g\.us/);
+      if (groupIdMatch && groupIdMatch[1]) {
+        return groupIdMatch[1] + '@g.us';
       }
+    }
   }
   return null;
 }
@@ -289,7 +316,9 @@ async function getWhatsappGroupUserIds(groupId) {
         const groupData = event.target.result;
         if (groupData && groupData.participants) {
           // Remove the @c.us part from each participant's user ID
-          const cleanedParticipants = groupData.participants.map(participant => participant.replace('@c.us', ''));
+          const cleanedParticipants = groupData.participants.map(
+            (participant) => participant.replace('@c.us', '')
+          );
           resolve(cleanedParticipants);
         } else {
           reject('Group not found or no participants');
@@ -304,23 +333,31 @@ async function getWhatsappGroupUserIds(groupId) {
   });
 }
 
-
-
-// This function is used to get the list of user IDs for a given group. 
+// This function is used to get the list of user IDs for a given group.
 // It first finds the "Group info" button, and then clicks on it to open the group's information page.
 async function getXGroupUserIds() {
   const groupInfoButton = document.querySelector('a[aria-label="Group info"]');
   if (groupInfoButton) {
     groupInfoButton.click();
     // Wait for the user list to load (you might need to adjust the delay)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const userElements = document.querySelectorAll('[data-testid="UserCell"] a[role="link"]');
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const userElements = document.querySelectorAll(
+      '[data-testid="UserCell"] a[role="link"]'
+    );
+
     // Retrieve and format unique user IDs
-    const userIds = Array.from(new Set(Array.from(userElements).map(el => '@' + el.getAttribute('href').split('/').pop())));
+    const userIds = Array.from(
+      new Set(
+        Array.from(userElements).map(
+          (el) => '@' + el.getAttribute('href').split('/').pop()
+        )
+      )
+    );
 
     // Click the back button
-    const backButton = document.querySelector('button[data-testid="app-bar-back"]');
+    const backButton = document.querySelector(
+      'button[data-testid="app-bar-back"]'
+    );
     if (backButton) {
       backButton.click();
     }
@@ -332,8 +369,12 @@ async function getXGroupUserIds() {
 
 // Check if it is the X composition page (mobile or desktop)
 function isTweetCompositionPage() {
-  const canonicalLink = document.querySelector('link[rel="canonical"][href="https://x.com/compose/post"]');
-  const alternateLink = document.querySelector('link[rel="alternate"][hreflang="x-default"][href="https://x.com/compose/post"]');
+  const canonicalLink = document.querySelector(
+    'link[rel="canonical"][href="https://x.com/compose/post"]'
+  );
+  const alternateLink = document.querySelector(
+    'link[rel="alternate"][hreflang="x-default"][href="https://x.com/compose/post"]'
+  );
   return canonicalLink || alternateLink;
 }
 

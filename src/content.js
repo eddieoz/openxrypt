@@ -1,5 +1,3 @@
-
-
 // Retrieve private key of the extension user from storage
 async function retrieveExtensionUserPrivateKey() {
   const extensionUserHandle = globalThis.getAction('sender');
@@ -48,7 +46,7 @@ async function decryptPGPMessage(message) {
 
     // if not, just decrypt and show the text
     // Check if decryptedMessage.data is a JSON string
-    
+
     if (isJSON(decryptedMessage.data)) {
       decodedData = JSON.parse(decryptedMessage.data);
     } else {
@@ -58,10 +56,15 @@ async function decryptPGPMessage(message) {
     // If decodedData is an object, process it as a structured message
     // decode from Base64 then decode URI components
     if (typeof decodedData === 'object' && decodedData !== null) {
-      if (decodedData.event === 'xrypt.msg.new'){
-        const decodedText = decodeURIComponent(atob(decodedData.params.content.text).split('').map(c => {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+      if (decodedData.event === 'xrypt.msg.new') {
+        const decodedText = decodeURIComponent(
+          atob(decodedData.params.content.text)
+            .split('')
+            .map((c) => {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            })
+            .join('')
+        );
         return decodedText;
       } else {
         // Return the plain text if not a structured message
@@ -71,73 +74,108 @@ async function decryptPGPMessage(message) {
       // Return the plain text if not a structured message
       return decodedData + ' 🔒\n[ std ]';
     }
-      
-    
   } catch (error) {
-    console.error("Error decrypting PGP message:", error);
+    console.error('Error decrypting PGP message:', error);
     return '[Decryption Failed]';
   }
 }
 
+const DECRYPTION_INTERVAL = 1000; // Only run decryption every 1 second
+let lastDecryptionTime = 0;
+let lastContent = '';
+function hasContentChanged(el) {
+  return el.textContent !== lastContent;
+}
+
 // Automatically scan and decrypt all AES-GCM and PGP encrypted texts on the page
 async function autoDecryptAllXryptTexts() {
-  const pgpBlockRegex = /-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----/gs;
-  const pgpBlockRegexXrypt = /-----BEGIN PGP MESSAGE-----.*?\[ Encrypted with OpenXrypt \]/gs;
+  const now = Date.now();
+  if (now - lastDecryptionTime < DECRYPTION_INTERVAL) {
+    return; // Skip if less than 1 second has passed
+  }
+  lastDecryptionTime = now;
+  const pgpBlockRegex =
+    /-----BEGIN PGP MESSAGE-----.*?-----END PGP MESSAGE-----/gs;
+  const pgpBlockRegexXrypt =
+    /-----BEGIN PGP MESSAGE-----.*?\[ Encrypted with OpenXrypt \]/gs;
   const aesBlockRegexXrypt = /XRPT.*?XRPT/gs;
 
   const elements = globalThis.getAction('decrypt');
   if (elements) {
     for (const el of elements) {
       if (
-        el.childNodes.length === 1 &&
-        el.childNodes[0].nodeType === Node.TEXT_NODE ||
-        (await getWebsite() === 'whatsapp' && el.textContent.length > 60)
+        (el.childNodes.length === 1 &&
+          el.childNodes[0].nodeType === Node.TEXT_NODE) ||
+        ((await getWebsite()) === 'whatsapp' && el.textContent.length > 60)
       ) {
         const textContent = el.textContent;
-        const pgpMatches = textContent.match(pgpBlockRegexXrypt) || textContent.match(pgpBlockRegex);
+        const encryptedRegex = /XRPT|-----BEGIN PGP MESSAGE-----/;
+        if (!encryptedRegex.test(textContent)) {
+          continue; // Skip if no encrypted content
+        }
+        const pgpMatches =
+          textContent.match(pgpBlockRegexXrypt) ||
+          textContent.match(pgpBlockRegex);
         const aesMatches = textContent.match(aesBlockRegexXrypt);
-        
-        let newContent = textContent;
-        if (pgpMatches) {
+
+        if (pgpMatches && pgpMatches.length > 0) {
           for (const match of pgpMatches) {
             const decryptedText = await decryptPGPMessage(match);
-            newContent = newContent.replace(match, decryptedText);
+            // Avoid Replacing TextContent Too Often
+            el.textContent = decryptedText;
+            console.log(decryptedText);
           }
         }
 
-        if (aesMatches) {
+        if (aesMatches && aesMatches.length > 0) {
           // Check if the current URL is /home
-          if (window.location.pathname == "/notifications") {
+          if (window.location.pathname == '/notifications') {
             return;
           }
           for (const match of aesMatches) {
-            const encryptedData = match.replace('XRPT', '').replace('XRPT', '').trim();
+            const encryptedData = match
+              .replace('XRPT', '')
+              .replace('XRPT', '')
+              .trim();
             const tweetContainer = el.closest('article[role="article"]');
-            const userLink = tweetContainer ? tweetContainer.querySelector('a[href^="/"]') : null;
-            const username = userLink ? userLink.getAttribute('href').substring(1) : null;
+            const userLink = tweetContainer
+              ? tweetContainer.querySelector('a[href^="/"]')
+              : null;
+            const username = userLink
+              ? userLink.getAttribute('href').substring(1)
+              : null;
 
             try {
               let decryptionKey;
               if (username) {
-                const recipientPublicKey = await retrieveUserPublicKey(`@${username}`);
+                const recipientPublicKey = await retrieveUserPublicKey(
+                  `@${username}`
+                );
                 const fingerprint = await getGPGFingerprint(recipientPublicKey);
                 decryptionKey = await generateEncryptionKey(fingerprint);
               } else {
-                const privateKeyArmored = await retrieveExtensionUserPrivateKey();
-                const privateKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
+                const privateKeyArmored =
+                  await retrieveExtensionUserPrivateKey();
+                const privateKey = await openpgp.readPrivateKey({
+                  armoredKey: privateKeyArmored,
+                });
                 const publicKey = privateKey.toPublic();
-                const fingerprint = publicKey.getFingerprint().match(/.{1,4}/g).join(' ');
+                const fingerprint = publicKey
+                  .getFingerprint()
+                  .match(/.{1,4}/g)
+                  .join(' ');
                 decryptionKey = await generateEncryptionKey(fingerprint);
               }
-              const decryptedText = await decryptSymmetric(encryptedData, decryptionKey);
-              newContent = newContent.replace(match, decryptedText);
+              const decryptedText = await decryptSymmetric(
+                encryptedData,
+                decryptionKey
+              );
+              textContent = textContent.replace(match, decryptedText);
             } catch (err) {
               console.error(`Failed to decrypt message:`, err);
             }
           }
         }
-
-        el.textContent = newContent;
       }
     }
   }
@@ -147,11 +185,11 @@ async function autoDecryptAllXryptTexts() {
 function retrieveUserPublicKey(username) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get({ keys: {} }, (result) => {
-      const keys = result.keys;      
+      const keys = result.keys;
       if (keys[username]) {
         resolve(keys[username]);
-      } else {       
-        alert(`Public key not found for ${username}`) 
+      } else {
+        alert(`Public key not found for ${username}`);
         reject(`Public key not found for ${username}`);
       }
     });
@@ -202,10 +240,9 @@ async function getGPGFingerprint(publicKey) {
 // Encrypt the text using PGP
 async function encryptTextPGP(text, recipientPublicKeys) {
   try {
-    
     // Create a message object from the modified text
     const message = await openpgp.createMessage({ text });
-        
+
     const recipientKeys = await Promise.all(
       recipientPublicKeys.map((key) => openpgp.readKey({ armoredKey: key }))
     );
@@ -239,9 +276,8 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
   if (selectedText.length > 0) {
     try {
       const recipientPublicKey = await retrieveUserPublicKey(userHandle);
-      const extensionUserPublicKey = await retrieveUserPublicKeyFromPrivate(
-        extensionUserHandle
-      );
+      const extensionUserPublicKey =
+        await retrieveUserPublicKeyFromPrivate(extensionUserHandle);
 
       // Create a formatted document in the format that allow future developments:
       // Based on docs/protocol/simplex-chat.md
@@ -257,21 +293,26 @@ async function encryptAndReplaceSelectedTextPGP(sendResponse) {
 
       // Add lock marker after the text
       // Encode text to UTF-8 then to Base64
-      const base64Text = btoa(encodeURIComponent(`${selectedText} 🔒`).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+      const base64Text = btoa(
+        encodeURIComponent(`${selectedText} 🔒`).replace(
+          /%([0-9A-F]{2})/g,
+          (match, p1) => String.fromCharCode('0x' + p1)
+        )
+      );
       const xryptDocument = {
-        "event": "xrypt.msg.new",
-        "params": {
-          "content": {
-            "type": "text",
-            "text": base64Text
-          }
-        }
-      }
+        event: 'xrypt.msg.new',
+        params: {
+          content: {
+            type: 'text',
+            text: base64Text,
+          },
+        },
+      };
 
-      const encryptedText = await encryptTextPGP(JSON.stringify(xryptDocument), [
-        recipientPublicKey,
-        extensionUserPublicKey,
-      ]);
+      const encryptedText = await encryptTextPGP(
+        JSON.stringify(xryptDocument),
+        [recipientPublicKey, extensionUserPublicKey]
+      );
 
       replaceSelectedText(encryptedText);
 
@@ -294,7 +335,9 @@ function replaceSelectedText(replacementText) {
   // Replace the content of the message input with the encrypted text
 
   // Verify if it is X mobile
-  let messageInput = document.querySelector('textarea[data-testid="dmComposerTextInput"]');
+  let messageInput = document.querySelector(
+    'textarea[data-testid="dmComposerTextInput"]'
+  );
   // if (messageInput && messageInput.hasAttribute('tagName') && messageInput.tagName === 'TEXTAREA') {
   if (messageInput) {
     messageInput.value = replacementText;
@@ -332,7 +375,9 @@ async function setSessionPassphrase(passphrase) {
 
 // Function to replace the text in the input with the encrypted version
 function replaceTextInInput(replacementText) {
-  const messageInput = document.querySelector('[contenteditable="true"][data-testid="dmComposerTextInput"]');
+  const messageInput = document.querySelector(
+    '[contenteditable="true"][data-testid="dmComposerTextInput"]'
+  );
   if (messageInput) {
     messageInput.innerText = replacementText;
     messageInput.value = replacementText;
@@ -342,7 +387,6 @@ function replaceTextInInput(replacementText) {
     messageInput.dispatchEvent(event);
   }
 }
-
 
 async function handleEncryptAndSend() {
   let messageText = '';
@@ -372,29 +416,37 @@ async function handleEncryptAndSend() {
         const userHandle = globalThis.getAction('userid');
         recipientHandles.push(await retrieveUserPublicKey(userHandle));
       }
-      
+
       if (!extensionUserHandle) {
-        alert('Failed to encrypt text. Was not possible to get your user info.');
+        alert(
+          'Failed to encrypt text. Was not possible to get your user info.'
+        );
         return null;
       }
-      
-      recipientHandles.push(await retrieveUserPublicKeyFromPrivate(extensionUserHandle));
 
-      const base64Text = btoa(encodeURIComponent(`${messageText} 🔒`).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+      recipientHandles.push(
+        await retrieveUserPublicKeyFromPrivate(extensionUserHandle)
+      );
+
+      const base64Text = btoa(
+        encodeURIComponent(`${messageText} 🔒`).replace(
+          /%([0-9A-F]{2})/g,
+          (match, p1) => String.fromCharCode('0x' + p1)
+        )
+      );
       const xryptDocument = {
-        "event": "xrypt.msg.new",
-        "params": {
-          "content": {
-            "type": "text",
-            "text": base64Text
-          }
-        }
-      }
+        event: 'xrypt.msg.new',
+        params: {
+          content: {
+            type: 'text',
+            text: base64Text,
+          },
+        },
+      };
 
       try {
-
         // if it is X Group, it needs to select the text again
-        if (isXGroupMessage()){
+        if (isXGroupMessage()) {
           messageInput = await globalThis.getAction('input');
           if (messageInput.tagName != 'TEXTAREA') {
             range = document.createRange();
@@ -405,7 +457,10 @@ async function handleEncryptAndSend() {
           }
         }
 
-        const encryptedText = await encryptTextPGP(JSON.stringify(xryptDocument), recipientHandles);
+        const encryptedText = await encryptTextPGP(
+          JSON.stringify(xryptDocument),
+          recipientHandles
+        );
         replaceSelectedText(encryptedText + '[ Encrypted with OpenXrypt ]\n');
       } catch (err) {
         console.error('Failed to encrypt text:', err);
@@ -421,13 +476,16 @@ async function handleEncryptAndSend() {
 
 // Function to handle encryption of tweet
 async function handleEncryptAndTweet() {
-  const tweetInput = document.querySelector('div[data-testid="tweetTextarea_0"]');
+  const tweetInput = document.querySelector(
+    'div[data-testid="tweetTextarea_0"]'
+  );
   if (tweetInput) {
     const tweetText = tweetInput.innerText.trim();
     if (tweetText) {
       const extensionUserHandle = await getAction('sender');
-      const recipientPublicKey = await retrieveUserPublicKey(extensionUserHandle);
-      
+      const recipientPublicKey =
+        await retrieveUserPublicKey(extensionUserHandle);
+
       // Generate the encryption key from the fingerprint
       const fingerprint = await getGPGFingerprint(recipientPublicKey);
       const encryptionKey = await generateEncryptionKey(fingerprint);
@@ -438,10 +496,12 @@ async function handleEncryptAndTweet() {
       selection.removeAllRanges();
       selection.addRange(range);
 
-      const encryptedText = await encryptSymmetric(`${tweetText} 🔒`, encryptionKey);
+      const encryptedText = await encryptSymmetric(
+        `${tweetText} 🔒`,
+        encryptionKey
+      );
       // Replace the text inside <span data-text="true">
       replaceSelectedText('XRPT\n' + encryptedText + '\nXRPT\n');
-      
     } else {
       alert('Tweet text cannot be empty.');
     }
@@ -450,59 +510,67 @@ async function handleEncryptAndTweet() {
   }
 }
 
-
 // Generate encryption key from the fingerprint
 async function generateEncryptionKey(fingerprint) {
   const enc = new TextEncoder();
   const keyData = enc.encode(fingerprint);
   const hash = await crypto.subtle.digest('SHA-256', keyData);
-  return crypto.subtle.importKey(
-    'raw',
-    hash,
-    { name: 'AES-GCM' },
-    false,
-    ['encrypt', 'decrypt']
-  );
+  return crypto.subtle.importKey('raw', hash, { name: 'AES-GCM' }, false, [
+    'encrypt',
+    'decrypt',
+  ]);
 }
 
 // Encrypt text using AES-GCM
 async function encryptSymmetric(text, key) {
-  const paddedText = padText(text)
+  const paddedText = padText(text);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const enc = new TextEncoder();
   const encodedText = enc.encode(paddedText);
-  
+
   const ciphertext = await crypto.subtle.encrypt(
     {
       name: 'AES-GCM',
-      iv: iv
+      iv: iv,
     },
     key,
     encodedText
   );
-  
-  return btoa(String.fromCharCode(...new Uint8Array(iv)) + String.fromCharCode(...new Uint8Array(ciphertext)));
+
+  return btoa(
+    String.fromCharCode(...new Uint8Array(iv)) +
+      String.fromCharCode(...new Uint8Array(ciphertext))
+  );
 }
 
 // Decrypt text using AES-GCM
 async function decryptSymmetric(encryptedText, key) {
   const rawData = atob(encryptedText);
-  const iv = new Uint8Array(rawData.slice(0, 12).split('').map(c => c.charCodeAt(0)));
-  const ciphertext = new Uint8Array(rawData.slice(12).split('').map(c => c.charCodeAt(0)));
-  
+  const iv = new Uint8Array(
+    rawData
+      .slice(0, 12)
+      .split('')
+      .map((c) => c.charCodeAt(0))
+  );
+  const ciphertext = new Uint8Array(
+    rawData
+      .slice(12)
+      .split('')
+      .map((c) => c.charCodeAt(0))
+  );
+
   const decryptedText = await crypto.subtle.decrypt(
     {
       name: 'AES-GCM',
-      iv: iv
+      iv: iv,
     },
     key,
     ciphertext
   );
-  
+
   const dec = new TextDecoder();
   decryptedMessage = dec.decode(decryptedText);
   return removePadding(decryptedMessage);
-  
 }
 
 // Padding character
@@ -510,13 +578,12 @@ const PAD_CHAR = ' ';
 
 // Function to pad the text to 270 characters (considering markers)
 function padText(text) {
-  if (text.length < 270){
+  if (text.length < 270) {
     const paddingNeeded = 270 - text.length;
     return text + PAD_CHAR.repeat(paddingNeeded);
   } else {
-    return text
+    return text;
   }
-  
 }
 
 // Function to remove the padding characters
@@ -540,8 +607,11 @@ function injectEncryptButton() {
     encryptButton.style.zIndex = '1000'; // Ensure the button is on top
     encryptButton.style.position = 'relative'; // Ensure it stays within the normal flow
 
-    if(globalThis.getWebsite() === 'whatsapp'){
-      sendButton.parentElement.setAttribute("style", "display: flex; flex-wrap: nowrap; flex-direction: row; justify-content: flex-end;");
+    if (globalThis.getWebsite() === 'whatsapp') {
+      sendButton.parentElement.setAttribute(
+        'style',
+        'display: flex; flex-wrap: nowrap; flex-direction: row; justify-content: flex-end;'
+      );
       encryptButton.style.marginRight = '33px';
     }
     sendButton.parentNode.insertBefore(encryptButton, sendButton);
@@ -560,9 +630,16 @@ observerDM.observe(document.body, { childList: true, subtree: true });
 
 // Function to inject Encrypt button next to the Post button
 function injectEncryptButtonForTweet() {
-  const postButtonInline = document.querySelector('button[data-testid="tweetButtonInline"]');
-  const postButton = document.querySelector('button[data-testid="tweetButton"]');
-  if ((postButtonInline || postButton) && !document.querySelector('#encryptAndTweetButton')) {
+  const postButtonInline = document.querySelector(
+    'button[data-testid="tweetButtonInline"]'
+  );
+  const postButton = document.querySelector(
+    'button[data-testid="tweetButton"]'
+  );
+  if (
+    (postButtonInline || postButton) &&
+    !document.querySelector('#encryptAndTweetButton')
+  ) {
     const encryptButton = document.createElement('button');
     encryptButton.id = 'encryptAndTweetButton';
     encryptButton.innerText = 'Obfuscate';
@@ -591,7 +668,7 @@ function monitorURLChanges() {
 
   const callback = function (mutationsList) {
     for (const mutation of mutationsList) {
-      if (window.location.href === "https://x.com/compose/post") {
+      if (window.location.href === 'https://x.com/compose/post') {
         injectEncryptButtonForTweet();
       }
     }
@@ -629,12 +706,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   return true; // Required for asynchronous responses
 });
+function debounce(func, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func.apply(this, args), delay);
+  };
+}
 
 // Initialize decryption observer
 function initAutoDecryptionObserver() {
   autoDecryptAllXryptTexts(); // Decrypt initially
 
-  const observer = new MutationObserver(autoDecryptAllXryptTexts);
+  // Use this debounced version in the observer
+  const observer = new MutationObserver(
+    debounce(autoDecryptAllXryptTexts, 300)
+  );
   observer.observe(document.body, {
     childList: true,
     subtree: true,
@@ -643,4 +730,3 @@ function initAutoDecryptionObserver() {
 
 // Start automatic decryption
 initAutoDecryptionObserver();
-
