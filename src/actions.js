@@ -28,7 +28,7 @@ const siteActions = {
       const userIds = await getWhatsappGroupUserIds(await getWhatsappGroupId());
       return userIds;
     } },
-    { type: 'senderButton', action: () =>{        
+    { type: 'senderButton', action: () =>{
       const elements = Array.from(
         document.querySelectorAll('#main footer button[aria-label]'));
         const lastElement = elements[elements.length - 1];
@@ -73,11 +73,9 @@ function getAction(type) {
 
 // WhatsApp functions
 function findWhatsappNumberSender() {
-  const number = localStorage
-    .getItem('last-wid-md')
-    .split(':')[0]
-    .replace('"', '');
-  return number;
+  // ponytail: STORY-04 — null-safe WhatsApp sender
+  const raw = localStorage.getItem('last-wid-md');
+  return globalThis.whatsappSenderFromWid(raw);
 }
 function findWhatsappNumber() {
   // Get the first message element that contains the data-id attribute with a phone number
@@ -222,7 +220,7 @@ function isJSON(str) {
   }
 }
 
-// Checks if the current message is a group message 
+// Checks if the current message is a group message
 function isXGroupMessage() {
   return document.querySelector('a[aria-label="Group info"]') !== null;
 }
@@ -231,7 +229,7 @@ function isXGroupMessage() {
 function isWhatsappGroupMessage() {
   // Find all elements with a data-id attribute
   const elements = document.querySelectorAll('[data-id]');
-  
+
   // Loop through the elements to check for the presence of @g.us
   for (let element of elements) {
     const dataId = element.getAttribute('data-id');
@@ -246,7 +244,7 @@ function isWhatsappGroupMessage() {
 async function getWhatsappGroupId() {
   // Find all elements with a data-id attribute
   const elements = document.querySelectorAll('[data-id]');
-  
+
   // Loop through the elements to find the first occurrence of @g.us
   for (let element of elements) {
       const dataId = element.getAttribute('data-id');
@@ -306,7 +304,7 @@ async function getWhatsappGroupUserIds(groupId) {
 
 
 
-// This function is used to get the list of user IDs for a given group. 
+// This function is used to get the list of user IDs for a given group.
 // It first finds the "Group info" button, and then clicks on it to open the group's information page.
 async function getXGroupUserIds() {
   const groupInfoButton = document.querySelector('a[aria-label="Group info"]');
@@ -315,7 +313,7 @@ async function getXGroupUserIds() {
     // Wait for the user list to load (you might need to adjust the delay)
     await new Promise(resolve => setTimeout(resolve, 1000));
     const userElements = document.querySelectorAll('[data-testid="UserCell"] a[role="link"]');
-    
+
     // Retrieve and format unique user IDs
     const userIds = Array.from(new Set(Array.from(userElements).map(el => '@' + el.getAttribute('href').split('/').pop())));
 

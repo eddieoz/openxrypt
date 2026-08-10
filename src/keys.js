@@ -1,13 +1,21 @@
+// ponytail: uses sanitizeHandle from src/sanitize.js (loaded before this)
+// ponytail: uses getGPGFingerprint from src/content.js (loaded before this)
+
 // Add Public Key event listener
 document.getElementById("addKey").addEventListener("click", async () => {
-  const twitterHandle = document.getElementById("twitterHandle").value.trim();
+  const rawHandle = document.getElementById("twitterHandle").value;
   const publicKey = document.getElementById("publicKey").value.trim();
-  if (twitterHandle && publicKey) {
+  const twitterHandle = sanitizeHandle(rawHandle);
+  if (!twitterHandle) {
+    alert("Invalid handle. Use alphanumeric characters only (e.g. @eddieoz).");
+    return;
+  }
+  if (publicKey) {
     const fingerprint = await getGPGFingerprint(publicKey);
     if (fingerprint) {
       chrome.storage.local.get({ keys: {} }, (result) => {
         const keys = result.keys;
-        keys[twitterHandle] = publicKey;
+        keys[twitterHandle] = { armor: publicKey, fingerprint };
         chrome.storage.local.set({ keys }, () => {
           alert("Key added successfully!");
           document.getElementById("twitterHandle").value = "";
@@ -25,9 +33,14 @@ document.getElementById("addKey").addEventListener("click", async () => {
 
 // Add Private Key event listener
 document.getElementById("addPrivateKey").addEventListener("click", async () => {
-  const ownerHandle = document.getElementById("ownerHandle").value.trim();
+  const rawHandle = document.getElementById("ownerHandle").value;
   const privateKey = document.getElementById("privateKey").value.trim();
-  if (ownerHandle && privateKey) {
+  const ownerHandle = sanitizeHandle(rawHandle);
+  if (!ownerHandle) {
+    alert("Invalid handle. Use alphanumeric characters only (e.g. @eddieoz).");
+    return;
+  }
+  if (privateKey) {
     const publicKey = await getPublicKeyFromPrivate(privateKey);
     const fingerprint = await getGPGFingerprint(publicKey);
     if (fingerprint) {
@@ -74,6 +87,16 @@ async function getGPGFingerprint(publicKey) {
   }
 }
 
+// Build show-key URL using handle (not key material)
+function buildShowKeyUrl(handle) {
+  return `/src/show_key.html?handle=${encodeURIComponent(handle)}`;
+}
+
+// Only accept handle query param — rejects key-based access
+function acceptsQueryParam(name) {
+  return name === 'handle';
+}
+
 // Load and display all public keys
 function loadKeys() {
   chrome.storage.local.get({ keys: {} }, async (result) => {
@@ -81,22 +104,34 @@ function loadKeys() {
     keysTableBody.innerHTML = "";
     const keys = result.keys;
     for (const twitterHandle in keys) {
-      const fingerprint = await getGPGFingerprint(keys[twitterHandle]);
+      const record = keys[twitterHandle];
+      const armor = record.armor || record;
+      const fingerprint = await getGPGFingerprint(armor);
       const row = document.createElement("tr");
-      row.innerHTML = `
-                <td>${twitterHandle}</td>
-                <td>${fingerprint || "Invalid Key"}</td>
-                <td>
-                    <button class="show-btn-pubkey" data-handle="${twitterHandle}">Show Key</button>
-                    <button class="delete-pub-btn" data-handle="${twitterHandle}">Delete</button>
-                </td>
-            `;
+      const handleCell = document.createElement("td");
+      handleCell.textContent = twitterHandle;
+      const fpCell = document.createElement("td");
+      fpCell.textContent = fingerprint || "Invalid Key";
+      const btnCell = document.createElement("td");
+      const showBtn = document.createElement("button");
+      showBtn.className = "show-btn-pubkey";
+      showBtn.dataset.handle = twitterHandle;
+      showBtn.textContent = "Show Key";
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-pub-btn";
+      delBtn.dataset.handle = twitterHandle;
+      delBtn.textContent = "Delete";
+      btnCell.appendChild(showBtn);
+      btnCell.appendChild(delBtn);
+      row.appendChild(handleCell);
+      row.appendChild(fpCell);
+      row.appendChild(btnCell);
       keysTableBody.appendChild(row);
     }
 
     document.querySelectorAll(".delete-pub-btn").forEach((btn) => {
       btn.addEventListener("click", (event) => {
-        const twitterHandle = event.target.getAttribute("data-handle");
+        const twitterHandle = event.target.dataset.handle;
         chrome.storage.local.get({ keys: {} }, (result) => {
           const keys = result.keys;
           delete keys[twitterHandle];
@@ -107,13 +142,9 @@ function loadKeys() {
 
     document.querySelectorAll(".show-btn-pubkey").forEach((btn) => {
       btn.addEventListener("click", (event) => {
-        const twitterHandle = event.target.getAttribute("data-handle");
-        chrome.storage.local.get({ keys: {} }, (result) => {
-          const keys = result.keys;
-          const publicKey = encodeURIComponent(keys[twitterHandle]);
-          const url = chrome.runtime.getURL(`/src/show_key.html?key=${publicKey}`);
-          chrome.tabs.create({ url });
-        });
+        const twitterHandle = event.target.dataset.handle;
+        const url = chrome.runtime.getURL(buildShowKeyUrl(twitterHandle));
+        chrome.tabs.create({ url });
       });
     });
   });
@@ -133,20 +164,30 @@ function loadPrivateKeys() {
       );
       const fingerprint = await getGPGFingerprint(publicKey);
       const row = document.createElement("tr");
-      row.innerHTML = `
-                <td>${ownerHandle}</td>
-                <td>${fingerprint || "Invalid Key"}</td>
-                <td>
-                    <button class="show-btn-privkey" data-handle="${ownerHandle}">Show Pub Key</button>
-                    <button class="delete-priv-btn" data-handle="${ownerHandle}">Delete</button>
-                </td>
-            `;
+      const handleCell = document.createElement("td");
+      handleCell.textContent = ownerHandle;
+      const fpCell = document.createElement("td");
+      fpCell.textContent = fingerprint || "Invalid Key";
+      const btnCell = document.createElement("td");
+      const showBtn = document.createElement("button");
+      showBtn.className = "show-btn-privkey";
+      showBtn.dataset.handle = ownerHandle;
+      showBtn.textContent = "Show Pub Key";
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-priv-btn";
+      delBtn.dataset.handle = ownerHandle;
+      delBtn.textContent = "Delete";
+      btnCell.appendChild(showBtn);
+      btnCell.appendChild(delBtn);
+      row.appendChild(handleCell);
+      row.appendChild(fpCell);
+      row.appendChild(btnCell);
       privateKeysTableBody.appendChild(row);
     }
 
     document.querySelectorAll(".delete-priv-btn").forEach((btn) => {
       btn.addEventListener("click", (event) => {
-        const ownerHandle = event.target.getAttribute("data-handle");
+        const ownerHandle = event.target.dataset.handle;
         chrome.storage.local.get({ private_keys: {} }, (result) => {
           const private_keys = result.private_keys;
           delete private_keys[ownerHandle];
@@ -157,15 +198,9 @@ function loadPrivateKeys() {
 
     document.querySelectorAll(".show-btn-privkey").forEach((btn) => {
       btn.addEventListener("click", (event) => {
-        const ownerHandle = event.target.getAttribute("data-handle");
-        chrome.storage.local.get({ private_keys: {} }, async (result) => {
-          const privateKey = result.private_keys[ownerHandle];
-          const publicKey = encodeURIComponent(
-            await getPublicKeyFromPrivate(privateKey)
-          );
-          const url = chrome.runtime.getURL(`/src/show_key.html?key=${publicKey}`);
-          chrome.tabs.create({ url });
-        });
+        const ownerHandle = event.target.dataset.handle;
+        const url = chrome.runtime.getURL(buildShowKeyUrl(ownerHandle));
+        chrome.tabs.create({ url });
       });
     });
   });
