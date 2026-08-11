@@ -1,11 +1,11 @@
-// FIX: helper that safely sets text on a newly created element
+// helper that safely sets text on a newly created element
 function createTextCell(text) {
   const td = document.createElement('td');
   td.textContent = text;
   return td;
 }
 
-// FIX: build table rows with DOM API instead of innerHTML
+// Build table rows with DOM API instead of innerHTML
 function createKeyRow(handle, fingerprint, showBtnClass, deleteBtnClass) {
   const row = document.createElement('tr');
 
@@ -152,7 +152,7 @@ function loadPrivateKeys() {
         private_keys[ownerHandle]
       );
       const fingerprint = await getGPGFingerprint(publicKey);
-      // FIX (innerHTML XSS): use safe DOM-based row builder
+      // Use safe DOM-based row builder
       const row = createKeyRow(ownerHandle, fingerprint, 'show-btn-privkey', 'delete-priv-btn');
       privateKeysTableBody.appendChild(row);
     }
