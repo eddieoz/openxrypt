@@ -33,7 +33,7 @@ async function decryptPGPMessage(message) {
       decryptionKeys: [privateKey],
     });
 
-    // FIX (Implicit globals): declare with const/let
+    // declare with const/let
     let decodedData;
     if (isJSON(decryptedMessage.data)) {
       decodedData = JSON.parse(decryptedMessage.data);
@@ -65,7 +65,7 @@ async function decryptPGPMessage(message) {
 async function autoDecryptAllXryptTexts() {
   const pgpBlockRegex = /-----BEGIN PGP MESSAGE-----[\s\S]{0,65536}?-----END PGP MESSAGE-----/g;
   const pgpBlockRegexXrypt = /-----BEGIN PGP MESSAGE-----[\s\S]{0,65536}?\[ Encrypted with OpenXrypt \]/g;
-  // FIX (ReDoS): anchored, length-capped pattern; XRPT markers are fixed strings
+  //Anchored, length-capped pattern; XRPT markers are fixed strings
   const aesBlockRegexXrypt = /XRPT([\s\S]{1,4096}?)XRPT/g;
 
   const elements = globalThis.getAction('decrypt');
@@ -78,7 +78,7 @@ async function autoDecryptAllXryptTexts() {
       ) {
         const textContent = el.textContent;
 
-        // FIX: skip elements whose text is excessively long before regex evaluation
+        // Skip elements whose text is excessively long before regex evaluation
         if (textContent.length > 131072) continue;
 
         const pgpMatches = textContent.match(pgpBlockRegexXrypt) || textContent.match(pgpBlockRegex);
@@ -130,7 +130,7 @@ async function autoDecryptAllXryptTexts() {
 }
 
 // Retrieve public key of a user from storage
-// FIX: replace alert() with console.error + thrown rejection;
+// Replace alert() with console.error + thrown rejection;
 // alert() in a content script leaks internal error details to the page context and
 function retrieveUserPublicKey(username) {
   return new Promise((resolve, reject) => {
@@ -147,7 +147,7 @@ function retrieveUserPublicKey(username) {
 }
 
 // Retrieve public key of a user from a private key
-// FIX (alert() in content script): same as above
+// (alert() in content script): same as above
 async function retrieveUserPublicKeyFromPrivate(username) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get({ private_keys: {} }, async (result) => {
@@ -289,7 +289,7 @@ function replaceSelectedText(replacementText) {
   }
 }
 
-// FIX (Plaintext passphrase in sessionStorage):
+// Plaintext passphrase in sessionStorage:
 async function _deriveWrappingKey(salt) {
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
@@ -449,7 +449,7 @@ async function handleEncryptAndTweet() {
       const fingerprint = await getGPGFingerprint(recipientPublicKey);
       const encryptionKey = await generateEncryptionKey(fingerprint);
 
-      // FIX: declare range/selection with let
+      // Declare range/selection with let
       let range = document.createRange();
       range.selectNodeContents(tweetInput);
       let selection = window.getSelection();
@@ -517,7 +517,7 @@ async function decryptSymmetric(encryptedText, key) {
   );
   
   const dec = new TextDecoder();
-  // FIX (Implicit globals): declare decryptedMessage with const
+  // Declare decryptedMessage with const
   const decryptedMessage = dec.decode(decryptedText);
   return removePadding(decryptedMessage);
   
@@ -630,7 +630,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ status: 'success', message: 'Passphrase set' });
     });
   } else if (request.action === 'checkPassphrase') {
-    // FIX (Plaintext passphrase in sessionStorage): check the wrapped blob key
+    //Plaintext passphrase in sessionStorage: check the wrapped blob key
     const hasPassphrase = !!sessionStorage.getItem('sessionPassphraseBlob');
     sendResponse({ hasPassphrase });
   } else {
